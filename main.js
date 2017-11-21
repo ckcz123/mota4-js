@@ -207,11 +207,11 @@ main.dom.data.ontouchstart = function(e) {
 	var loc = main.core.getClickLoc(e.targetTouches[0].clientX, e.targetTouches[0].clientY);
 	main.core.setAutomaticRoute(parseInt(loc.x / loc.size), parseInt(loc.y / loc.size));
 }
-/*
-main.dom.statusBar.image.book.onclick = function(e) {
+
+main.statusBar.image.book.onclick = function() {
 	main.core.openBook();
 }
-
+/*
 main.dom.statusBar.image.fly.onclick = function(e) {
     main.core.useFly();
 }

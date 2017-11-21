@@ -18,6 +18,7 @@ function core() {
 			'mp3': {},
 			'ogg': {}
 		},
+		'ground': null,
 		'items': {},
 		'enemys': {},
 		'maps': {},
@@ -56,6 +57,7 @@ function core() {
 		'soundStatus': true,
 		'heroMoving': false,
 		'heroStop': true,
+		'currentOpen': null,
 		'lockControl': false,
 		'keyBoardLock': false,
 		'mouseLock': false,
@@ -108,6 +110,9 @@ core.prototype.init = function(dom, statusBar, canvas, images, sounds, firstData
 	else {
         core.dom.musicBtn.style.display = 'block';
 	}
+
+	core.material.ground = new Image();
+	core.material.ground.src = "images/ground.png";
 
 	core.loader(function() {
 
@@ -760,6 +765,7 @@ core.prototype.battle = function(id, x, y) {
     core.removeBlock('event',x,y);
     core.canvas.event.clearRect(32*x, 32*y, 32, 32);
     core.updateFg();
+    core.drawTip("打败 "+core.material.enemys[id].name+"，金币+"+core.material.enemys[id].money);
 }
 
 core.prototype.getDamage = function (monsterId) {
@@ -767,6 +773,45 @@ core.prototype.getDamage = function (monsterId) {
 	var hero_atk = core.status.hero.atk, hero_def = core.status.hero.def, hero_mdef = core.status.hero.mdef;
 	var mon_hp = monster.hp, mon_atk=monster.atk, mon_def=monster.def, mon_special=monster.special;
 	return core.calDamage(hero_atk,hero_def,hero_mdef,mon_hp,mon_atk,mon_def,mon_special);
+}
+
+core.prototype.getCritical = function (monsterId) {
+    var monster = core.material.enemys[monsterId];
+    if (monster.special==3) return "???";
+    var last=core.calDamage(core.status.hero.atk, core.status.hero.def, core.status.hero.mdef,
+		monster.hp, monster.atk, monster.def, monster.mdef);
+    if (last==0) return 0;
+
+    for (var i = core.status.hero.atk+1; i <= monster.hp+monster.def; i++)
+    {
+        var damage = core.calDamage(i, core.status.hero.def, core.status.hero.mdef,
+        		monster.hp, monster.atk, monster.def, monster.mdef);
+        if (damage < last)
+            return i-core.status.hero.atk;
+        last = damage;
+    }
+    return 0;
+}
+
+core.prototype.getCriticalDamage = function (monsterId) {
+    var c=core.getCritical(monsterId);
+    if (c=='???') return '???';
+    if (c==0) return 0;
+    var monster = core.material.enemys[monsterId];
+    // if (c<=0) return 0;
+    var last=core.calDamage(core.status.hero.atk, core.status.hero.def, core.status.hero.mdef,
+        monster.hp, monster.atk, monster.def, monster.mdef);
+    if (last==999999999) return '???';
+
+    return last-core.calDamage(core.status.hero.atk+c, core.status.hero.def, core.status.hero.mdef,
+        monster.hp, monster.atk, monster.def, monster.mdef);
+}
+
+core.prototype.getDefDamage = function (monsterId) {
+    var monster = core.material.enemys[monsterId];
+    return core.getDamage(monsterId)-
+        core.calDamage(core.status.hero.atk, core.status.hero.def+1, core.status.hero.mdef,
+            monster.hp, monster.atk, monster.def, monster.mdef)
 }
 
 core.prototype.calDamage = function (hero_atk, hero_def, hero_mdef, mon_hp, mon_atk, mon_def, mon_special) {
@@ -945,6 +990,15 @@ core.prototype.setStrokeStyle = function(map, style) {
 	else {
 		core.canvas[map].strokeStyle = style;
 	}
+}
+
+core.prototype.setAlpha = function(map, alpha) {
+	if (map=='all') {
+		for (var m in core.canvas) {
+			core.canvas[m].globalAlpha = alpha;
+		}
+	}
+	else core.canvas[map].globalAlpha = alpha;
 }
 
 core.prototype.setFillStyle = function(map, style) {
@@ -1306,9 +1360,6 @@ core.prototype.updateFg = function () {
     		if (damage==999999999) damage="???";
     		else if (damage>100000) damage=(damage/100000).toFixed(1)+"w";
 
-            var length=core.canvas.fg.measureText(damage).width;
-
-
             core.setFillStyle('fg', '#000000');
             core.canvas.fg.fillText(damage, 32*x+2, 32*(y+1)-2);
             core.canvas.fg.fillText(damage, 32*x, 32*(y+1)-2);
@@ -1525,6 +1576,87 @@ core.prototype.getItemAnimate = function(itemId, itemNum, itemX, itemY) {
 /**
  * 系统机制 start
  */
+
+core.prototype.openBook = function() {
+	if (!core.hasItem('book')) {
+		core.drawTip("你没有怪物手册");
+		return;
+	}
+	if (core.status.currentOpen == 'book') {
+		core.clearMap('data', 0, 0, 416, 416);
+		core.setAlpha('data', 1.0);
+		core.unLockControl();
+		core.unLockKeyBoard();
+		core.status.currentOpen = null;
+		return;
+	}
+	if (core.status.lockControl) return;
+
+	core.lockControl();
+	core.lockKeyBoard();
+	core.status.currentOpen = 'book';
+
+	var enemys = [];
+	var used = {};
+    var mapBlocks = core.temp.thisMap.blocks;
+    for(var b = 0;b < mapBlocks.length;b++) {
+    	if (core.isset(mapBlocks[b].event) && mapBlocks[b].event.cls == 'enemys') {
+    		var monsterId = mapBlocks[b].event.id;
+    		if (core.isset(used[monsterId])) continue;
+
+    		var monster = core.material.enemys[monsterId];
+
+    		enemys.push({
+				'id': monsterId, 'name': monster.name, 'hp': monster.hp, 'atk': monster.atk, 'def': monster.def,
+				'money': monster.money, 'special': core.enemys.getSpecialText(monsterId),
+				'damage': core.getDamage(monsterId), 'critical': core.getCritical(monsterId),
+				'criticalDamage': core.getCriticalDamage(monsterId), 'defDamage': core.getDefDamage(monsterId)
+			});
+
+    		used[monsterId] = true;
+		}
+    }
+
+    enemys.sort(function (a, b) {
+    	if (a.damage == b.damage) {
+    		return a.money - b.money;
+		}
+		return a.damage - b.damage;
+    });
+
+    // console.log(enemys);
+
+    // showEnemyBook
+	core.drawEnemyBook(enemys, 1);
+
+}
+
+core.prototype.drawEnemyBook = function (enemys, page) {
+
+    var background = core.canvas.data.createPattern(core.material.ground, "repeat");
+
+	core.clearMap('data', 0, 0, 416, 416);
+
+    core.setAlpha('data', 1);
+    core.setFillStyle('data', background);
+    core.fillRect('data', 0, 0, 416, 416);
+
+	core.setAlpha('data', 0.6);
+	core.setFillStyle('data', '#000000');
+	core.fillRect('data', 0, 0, 416, 416);
+
+    core.setAlpha('data', 1);
+	core.canvas.data.textAlign = 'left';
+	if (enemys.length == 0) {
+		core.fillText('data', "本层无怪物", 83, 222, '#999999', "bold 50px Verdana");
+		return;
+	}
+
+	var perpage = 6;
+
+
+
+}
 
 core.prototype.setFirstItem = function() {
 	core.setStatus('level', core.firstData.heroLevel);

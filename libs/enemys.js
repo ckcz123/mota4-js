@@ -70,4 +70,19 @@ enemys.prototype.getEnemys = function(enemyId) {
     return this.enemys[enemyId];
 }
 
+enemys.prototype.getSpecialText = function(enemyId) {
+    if (enemyId == undefined) return "";
+    var special = this.enemys[enemyId].special;
+    if (special==1) return "先攻";
+    if (special==2) return "魔攻";
+    if (special==3) return "坚固";
+    if (special==4) return "2连击";
+    if (special==5) return "3连击";
+    if (special==6) return "4连击";
+    if (special==7) return "破甲";
+    if (special==8) return "反击";
+    if (special==9) return "净化";
+    return "";
+}
+
 main.instance.enemys = new enemys();
