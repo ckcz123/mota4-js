@@ -15,7 +15,8 @@ function core() {
 			'64': {}
 		},
 		'sounds': {
-			'mp3': {}
+			'mp3': {},
+			'ogg': {}
 		},
 		'items': {},
 		'enemys': {},
@@ -35,14 +36,14 @@ function core() {
 		'heroMoveInterval': null,
 		'heroAutoMoveScan': null,
 		'getItemAnimate': [],
-		'getItemTipAnimate': null
+		'getItemTipAnimate': null,
+		'openDoorAnimate': null
 	}
 	this.status = {
 		'hero': {
             'id': '',
             'name': '',
 			'floor': 0,
-			'level': 0,
 			'hp': 0,
 			'atk': 0,
 			'def': 0,
@@ -69,6 +70,7 @@ function core() {
 		'playedBgm': null,
 		'twoAnimateObjs': [],
 		'fourAnimateObjs': [],
+		'openingDoor': null,
 		'heroLoc': {'direction': 'down', 'x': 0, 'y': 1},
 		'autoStep': 0,
 		'movedStep': 0,
@@ -90,6 +92,7 @@ core.prototype.init = function(dom, statusBar, canvas, images, sounds, firstData
 	core.dom.versionLabel.innerHTML = firstData.version;
 	core.material.items = core.items.getItems();
 	core.material.maps = core.maps.getMaps();
+	core.material.enemys = core.enemys.getEnemys();
 	core.material.icons = core.icons.getIcons();
 	core.material.events = core.events.getEvents();
 	core.loader(function() {
@@ -245,13 +248,11 @@ core.prototype.playGame = function() {
 }
 
 core.prototype.keyDown = function(e) {
-	console.log(e.keyCode);
 	if(!core.status.played || core.status.keyBoardLock) {
 		return;
 	}
 	if(core.status.automaticRouting || core.status.automaticRoued) {
 		core.stopAutomaticRoute();
-		return;
 	}
 	switch(e.keyCode) {
 		case 37:
@@ -405,85 +406,9 @@ core.prototype.setAutomaticRoute = function(destX, destY) {
 			}
 		}
 	}
-	console.log(core.temp.automaticRoutingTemp);
 	core.canvas.data.restore();
 	core.status.automaticRoued = true;
 }
-/*
-core.prototype.automaticRoute = function(destX, destY) {
-	var startX = core.getHeroLoc('x');
-	var startY = core.getHeroLoc('y');
-	var nowX = startX;
-	var nowY = startY;
-	var scanItem = {'x': 0, 'y': 0};
-	var scan = {'up': {'x': 0, 'y': -1}, 'left': {'x': -1, 'y': 0}, 'down': {'x': 0, 'y': 1}, 'right': {'x': 1, 'y': 0}};
-	var min = {'x': 0, 'y': 0, 'step': 9999};
-	var F = 0, G = 0, H = 0;
-	var openList = [];
-	var closeList = [{'x': nowX, 'y': nowY}];
-	var tempList = [];
-	for(var i = 0;i < 169;i++) {
-		scanLoop:
-		for(var direction in scan) {
-			scanItem.x = nowX + scan[direction].x;
-			scanItem.y = nowY + scan[direction].y;
-			for(var c = 0;c < closeList.length;c++) {
-				if(closeList[c].x == scanItem.x && closeList[c].y == scanItem.y) {
-					continue scanLoop;
-				}
-			}
-			if (scanItem.x == destX && scanItem.y == destY) {
-
-
-
-			}
-			if(!core.terrainExists(scanItem.x, scanItem.y) && !core.noPassExists(nowX, nowY) && ((scanItem.x == destX && scanItem.y == destY) || !core.stairExists(scanItem.x, scanItem.y))) {
-				for(var o = 0;o < openList.length;o++) {
-					if(openList[o].x == scanItem.x && openList[o].y == scanItem.y) {
-						continue scanLoop;
-					}
-				}
-				openList.push({'direction': direction, 'parentNode': {'x': nowX, 'y': nowY}, 'x': scanItem.x, 'y': scanItem.y});
-			}
-		}
-		for(var o = 0;o < openList.length;o++) {
-			H = Math.abs(openList[o].x - destX) + Math.abs(openList[o].y - destY);
-			F = 1 + H;
-			if(F < min.step) {
-				min.index = o;
-				min.direction = openList[o].direction;
-				min.parentNode = openList[o].parentNode;
-				min.x = openList[o].x;
-				min.y = openList[o].y;
-				min.step = F;
-			}
-		}
-		openList.splice(min.index, 1);
-		closeList.push({'parentNode': min.parentNode, 'direction': min.direction, 'x': min.x, 'y': min.y});
-		min.step = 9999;
-		nowX = min.x;
-		nowY = min.y;
-		if(nowX == destX && nowY == destY) {
-			while(nowX != startX || nowY != startY) {
-				for(var j = 0;j < closeList.length;j++) {
-					if(closeList[j].x == nowX && closeList[j].y == nowY) {
-						tempList.push({'direction': closeList[j].direction,'x': nowX, 'y': nowY});
-						nowX = closeList[j].parentNode.x;
-						nowY = closeList[j].parentNode.y;
-						closeList.splice(j, 1);
-					}
-				}
-			}
-			tempList = tempList.reverse();
-			console.log(tempList);
-			console.log('自动寻路已找到目的地');
-			return tempList;
-		}
-	}
-	console.log('无法到达目的地');
-	return false;
-}
-*/
 // BFS
 core.prototype.automaticRoute = function(destX, destY) {
     var startX = core.getHeroLoc('x');
@@ -500,8 +425,6 @@ core.prototype.automaticRoute = function(destX, destY) {
     var queue = [];
     var route = [];
     var ans = []
-
-	console.log("destX="+destX+", destY="+destY);
 
     if (destX==startX && destY==startY) return false;
     queue.push(13*startX+startY);
@@ -531,7 +454,6 @@ core.prototype.automaticRoute = function(destX, destY) {
 	}
 
 	if (!core.isset(route[13*destX+destY])) {
-    	console.log("无法到达目的地！");
     	return false;
 	}
 
@@ -544,8 +466,6 @@ core.prototype.automaticRoute = function(destX, destY) {
 	}
 
 	ans.reverse();
-	console.log(ans);
-	console.log("自动寻路完成！");
 	return ans;
 }
 
@@ -765,16 +685,126 @@ core.prototype.drawHero = function(direction, x, y, status, offsetX, offsetY) {
  * 地图处理 start
  */
 
-core.prototype.changeFloor = function(floorId, heroLoc) {
+core.prototype.openDoor = function (id, x, y, needKey) {
+    // core.lockControl();
+    core.stopHero();
+    core.stopAutoHeroMove();
+    core.stopAutomaticRoute();
+	if (needKey) {
+		var key = id.replace("Door","Key");
+		if (!core.hasItem(key)) {
+			if (key=="yellowKey" || key=="blueKey" || key=="redKey")
+				core.drawTip("你没有"+core.material.items[key].name+"！", "normal");
+			else core.drawTip("无法开启此门。");
+			return;
+		}
+		else
+			core.useItem(key);
+	}
+	// open
+	core.playSound("door","ogg");
+	var state = 0;
+	var door = core.material.icons.animates[id];
+	core.interval.openDoorAnimate = window.setInterval(function() {
+        state++;
+        if (state==4) {
+        	clearInterval(core.interval.openDoorAnimate);
+			core.removeBlock('event',x,y);
+        	return;
+		}
+        core.canvas.event.clearRect(32*x, 32*y, 32, 32);
+		core.canvas.event.drawImage(core.material.images['32'].animates, 32*state, 32*door.loc, 32, 32, 32*x, 32*y, 32, 32);
+	}, 30)
+}
+
+core.prototype.battle = function(id, x, y) {
+    core.stopHero();
+    core.stopAutoHeroMove();
+    core.stopAutomaticRoute();
+
+    var damage=core.getDamage(id);
+    if (damage>=core.status.hero.hp) {
+        core.drawTip("你打不过此怪物！");
+        return;
+	}
+	core.status.hero.hp -= damage;
+    core.status.hero.gold += core.material.enemys[id].money;
+    core.updateStatus();
+    core.removeBlock('event',x,y);
+    core.canvas.event.clearRect(32*x, 32*y, 32, 32);
+}
+
+core.prototype.getDamage = function (monsterId) {
+	var monster = core.material.enemys[monsterId];
+	var hero_atk = core.status.hero.atk, hero_def = core.status.hero.def, hero_mdef = core.status.hero.mdef;
+	var mon_hp = monster.hp, mon_atk=monster.atk, mon_def=monster.def, mon_special=monster.special;
+	return core.calDamage(hero_atk,hero_def,hero_mdef,mon_hp,mon_atk,mon_def,mon_special);
+}
+
+core.prototype.calDamage = function (hero_atk, hero_def, hero_mdef, mon_hp, mon_atk, mon_def, mon_special) {
+    // 魔攻
+    if (mon_special==2) hero_def=0;
+    // 坚固
+    if (mon_special==3 && mon_def<hero_atk-1) mon_def=hero_atk-1;
+    // 模仿
+    if (mon_special==10)
+    {
+        mon_atk=hero_atk; mon_def=hero_def;
+    }
+    if (hero_atk<=mon_def) return 999999999;
+
+    var per_damage=mon_atk-hero_def;
+    if (per_damage<0) per_damage=0;
+    // 2连击 & 3连击
+
+    if (mon_special==4) per_damage*=2;
+    if (mon_special==5) per_damage*=3;
+    if (mon_special==6) per_damage*=4;
+    // 反击
+    if (mon_special==8) per_damage+=(int)(0.1*hero_atk);
+
+    // 先攻
+    var damage=mon_special==1?per_damage:0;
+    // 破甲
+    if (mon_special==7) damage=parseInt(0.9*hero_def);
+    // 净化
+    if (mon_special==9) damage=3*hero_mdef;
+
+    var turn=parseInt((mon_hp-1)/(hero_atk-mon_def));
+    var ans=damage+turn*per_damage;
+    ans -= hero_mdef;
+
+    // 魔防回血
+    // return ans;
+
+    // 魔防不回血
+    return ans<=0?0:ans;
+}
+
+core.prototype.changeFloor = function(floorId, stair, heroLoc) {
 	core.lockControl();
 	core.stopHero();
 	core.stopAutoHeroMove();
 	core.stopAutomaticRoute();
 	core.setFloorName(floorId);
+	if (core.isset(stair)) {
+		// find heroLoc
+		heroLoc = core.temp.heroLoc;
+		var blocks = core.material.maps[floorId].blocks;
+		for (var i in blocks) {
+			if (core.isset(blocks[i].event) && blocks[i].event.id === stair) {
+				heroLoc.x = blocks[i].x;
+				heroLoc.y = blocks[i].y;
+			}
+		}
+	}
+
  	window.setTimeout(function() {
  		console.log('地图切换到' + floorId);
+        core.playSound('floor', 'mp3');
  		core.mapChangeAnimate('show', function() {
- 			core.playSound('floor', 'mp3');
+            core.setStatus('floor', core.material.maps[floorId].floor);
+            core.updateStatus();
  			core.drawMap(floorId, function() {
 				core.hide(core.dom.floorMsgGroup, 10, function() {
 					core.unLockControl();
@@ -783,6 +813,7 @@ core.prototype.changeFloor = function(floorId, heroLoc) {
 				core.setHeroLoc('x', heroLoc.x);
 				core.setHeroLoc('y', heroLoc.y);
 				core.drawHero(core.getHeroLoc('direction'), core.getHeroLoc('x'), core.getHeroLoc('y'), 'stop');
+				core.updateFg();
  			});
  		});
  	}, 50);
@@ -944,12 +975,14 @@ core.prototype.drawMap = function(mapName, callback) {
 			core.canvas.event.drawImage(core.material.images[blockIcon.size][mapBlocks[b].event.cls], 0, blockIcon.loc * blockIcon.size, blockIcon.size, blockIcon.size, x, y, blockIcon.size, blockIcon.size);
 			core.addGlobalAnimate(mapBlocks[b].event.animate, x, y, 'event', blockIcon.loc, blockIcon.size, blockImage);
 		}
+		/*
 		if(core.isset(mapBlocks[b].fg)) {
 			blockIcon = core.material.icons[mapBlocks[b].fg.cls][mapBlocks[b].fg.id];
 			blockImage = core.material.images[blockIcon.size][mapBlocks[b].fg.cls];
 			core.canvas.fg.drawImage(core.material.images[blockIcon.size][mapBlocks[b].fg.cls], 0, blockIcon.loc * blockIcon.size, blockIcon.size, blockIcon.size, x, y, blockIcon.size, blockIcon.size);
 			core.addGlobalAnimate(mapBlocks[b].fg.animate, x, y, 'fg', blockIcon.loc, blockIcon.size, blockImage);
 		}
+		*/
 	}
 	core.setGlobalAnimate(core.firstData.animateSpeed);
 	callback();
@@ -1023,13 +1056,13 @@ core.prototype.blockExists = function(x, y) {
 	var mapBlocks = core.temp.thisMap.blocks;
 	for(var b = 0;b < mapBlocks.length;b++) {
 		if(mapBlocks[b].x == x && mapBlocks[b].y == y) {
-			return (mapBlocks[b].fg && mapBlocks[b].fg.noPass) || (mapBlocks[b].event && mapBlocks[b].event.noPass) || (mapBlocks[b].bg && mapBlocks[b].bg.noPass);
+			return (mapBlocks[b].event && mapBlocks[b].event.noPass) || (mapBlocks[b].bg && mapBlocks[b].bg.noPass);
 		}
 	}
 	return false;
 }
 
-core.prototype.rmBlock = function(map, x, y) {
+core.prototype.removeBlock = function(map, x, y) {
 	var map = map.split(',');
 	var mapBlocks = core.temp.thisMap.blocks;
 	var blockIcon;
@@ -1042,8 +1075,10 @@ core.prototype.rmBlock = function(map, x, y) {
 				}
 				blockIcon = core.material.icons[mapBlocks[b][map[m]].cls][mapBlocks[b][map[m]].id];
 				core.canvas[map[m]].clearRect(x * blockIcon.size,y * blockIcon.size, blockIcon.size, blockIcon.size);
-				delete core.temp.thisMap.blocks[b][map[m]];
+				// delete core.temp.thisMap.blocks[b][map[m]];
 			}
+            core.temp.thisMap.blocks.splice(b,1);
+			break;
 		}
 	}
 }
@@ -1056,7 +1091,7 @@ core.prototype.noPass = function(x, y) {
 	var noPass;
 	for(var b = 0;b < mapBlocks.length;b++) {
 		if(mapBlocks[b].x == x && mapBlocks[b].y == y) {
-			return noPass = (mapBlocks[b].fg && mapBlocks[b].fg.noPass) || (mapBlocks[b].event && mapBlocks[b].event.noPass) || (mapBlocks[b].bg && mapBlocks[b].bg.noPass);
+			return noPass = (mapBlocks[b].event && mapBlocks[b].event.noPass) || (mapBlocks[b].bg && mapBlocks[b].bg.noPass);
 		}
 	}
 }
@@ -1066,15 +1101,17 @@ core.prototype.trigger = function(x, y) {
 	var noPass;
 	for(var b = 0;b < mapBlocks.length;b++) {
 		if(mapBlocks[b].x == x && mapBlocks[b].y == y) {
-			noPass = (mapBlocks[b].fg && mapBlocks[b].fg.noPass) || (mapBlocks[b].event && mapBlocks[b].event.noPass) || (mapBlocks[b].bg && mapBlocks[b].bg.noPass);
+			noPass = (mapBlocks[b].event && mapBlocks[b].event.noPass) || (mapBlocks[b].bg && mapBlocks[b].bg.noPass);
 			if(noPass) {
 				core.clearAutomaticRouteNode(x, y);
 			}
+			/*
 			if(core.isset(mapBlocks[b].fg) && core.isset(mapBlocks[b].fg.trigger) && (core.isset(mapBlocks[b].fg.disabledTrigger) ? mapBlocks[b].fg.disabledTrigger == false : true)) {
 				core.material.events[mapBlocks[b].fg.trigger](mapBlocks[b], core, function(data) {
 					
 				});
 			}
+			*/
 			else if(core.isset(mapBlocks[b].event) && core.isset(mapBlocks[b].event.trigger) && (core.isset(mapBlocks[b].event.disabledTrigger) ? mapBlocks[b].event.disabledTrigger == false : true)) {
 				core.material.events[mapBlocks[b].event.trigger](mapBlocks[b], core, function(data) {
 					
@@ -1216,6 +1253,45 @@ core.prototype.getHeroLoc = function(itemName) {
 	return core.temp.heroLoc[itemName];
 }
 
+core.prototype.updateFg = function () {
+	if (!core.isset(core.temp.thisMap) || !core.isset(core.temp.thisMap.blocks)) return;
+	// 更新显伤
+    var mapBlocks = core.temp.thisMap.blocks;
+	core.clearMap('fg', 0, 0, 416, 416);
+    core.setFont('fg', "bold 11px Arial");
+    var hero_hp = core.status.hero.hp;
+    for(var b = 0;b < mapBlocks.length;b++) {
+    	var x=mapBlocks[b].x, y=mapBlocks[b].y;
+    	if (core.isset(mapBlocks[b].event) && mapBlocks[b].event.cls=='enemys') {
+    		var id = mapBlocks[b].event.id;
+
+    		var damage = core.getDamage(id);
+    		var color = "#000000";
+    		if (damage<=0) color = '#00FF00';
+    		else if (damage<hero_hp/3) color = '#FFFFFF';
+    		else if (damage<hero_hp*2/3) color = '#FFFF00';
+    		else if (damage<hero_hp) color = '#FF7F00';
+    		else color = '#FF0000';
+
+    		if (damage==999999999) damage="???";
+    		else if (damage>100000) damage=(damage/100000).toFixed(1)+"w";
+
+            var length=core.canvas.fg.measureText(damage).width;
+
+
+            core.setFillStyle('fg', '#000000');
+            core.canvas.fg.fillText(damage, 32*x+2, 32*(y+1)-2);
+            core.canvas.fg.fillText(damage, 32*x, 32*(y+1)-2);
+            core.canvas.fg.fillText(damage, 32*x+2, 32*(y+1));
+            core.canvas.fg.fillText(damage, 32*x, 32*(y+1));
+
+			core.setFillStyle('fg', color);
+            core.canvas.fg.fillText(damage, 32*x+1, 32*(y+1)-1);
+
+		}
+    }
+}
+
 /**
  * 地图处理 end
  */
@@ -1223,11 +1299,22 @@ core.prototype.getHeroLoc = function(itemName) {
 /**
  * 物品处理 start
  */
+core.prototype.hasItem = function(itemId) {
+    var itemCls = core.material.items[itemId].cls;
+    return core.isset(core.temp.itemList[itemCls]) && core.isset(core.temp.itemList[itemCls][itemId]) && core.temp.itemList[itemCls][itemId]>0;
+}
 
- core.prototype.addItem = function(itemId) {
- 	var itemData = core.material.items[itemId];
- 	var itemCls = itemData.cls;
- 	core.temp.itemList[itemCls];
+core.prototype.useItem = function(itemId) {
+	if (!core.hasItem(itemId)) return;
+    var itemCls = core.material.items[itemId].cls;
+    core.temp.itemList[itemCls][itemId]--;
+    core.updateStatus();
+}
+
+ core.prototype.addItem = function(itemId, itemNum) {
+     var itemData = core.material.items[itemId];
+     var itemCls = itemData.cls;
+ 	if (itemCls == 'item') return;
  	if(!core.isset(core.temp.itemList[itemCls])) {
  		core.temp.itemList[itemCls] = {};
  		core.temp.itemList[itemCls][itemId] = 0;
@@ -1235,24 +1322,82 @@ core.prototype.getHeroLoc = function(itemName) {
  	else if(!core.isset(core.temp.itemList[itemCls][itemId])) {
  		core.temp.itemList[itemCls][itemId] = 0;
  	}
- 	core.temp.itemList[itemCls][itemId]++;
- 	console.log(core.temp.itemList);
+ 	core.temp.itemList[itemCls][itemId]+=itemNum;
  }
 
-core.prototype.rmItem = function(itemX, itemY) {
+ /*
+core.prototype.removeBlock = function(itemX, itemY) {
 	var mapBlocks = core.temp.thisMap.blocks;
 	for(var b = 0;b < mapBlocks.length;b++) {
-		if(mapBlocks[b].x == itemX && mapBlocks[b].y == itemY && core.isset(mapBlocks[b].event) && mapBlocks[b].event.cls == 'items') {
-			delete mapBlocks[b].event;
+		if(mapBlocks[b].x == itemX && mapBlocks[b].y == itemY) {
+			// delete mapBlocks[b].event;
+			// mapBlocks[b]
+			core.temp.thisMap.blocks.splice(b,1);
+			break;
 		}
 	}
 }
+*/
 
-core.prototype.getItem = function(itemId, itemX, itemY) {
+core.prototype.getItemEffect = function(itemId, itemNum) {
+	var currfloor = parseInt(core.status.hero.floor);
+	var hard = parseInt((currfloor+4)/5);
+    var itemCls = core.material.items[itemId].cls;
+
+    // 消耗品
+    if (itemCls === 'item') {
+        if (itemId === 'redJewel') core.status.hero.atk+=1+hard;
+        if (itemId === 'blueJewel') core.status.hero.def+=1+hard;
+        if (itemId === 'greenJewel') core.status.hero.mdef+=2+3*hard;
+        // if (itemId == 'yellowJewel') core.status.hero.atk+=1+hard;
+        if (itemId === 'redPotion') core.status.hero.hp+=100;
+        if (itemId === 'bluePotion') core.status.hero.hp+=250;
+        if (itemId === 'yellowPotion') core.status.hero.hp+=500;
+        if (itemId === 'greenPotion') core.status.hero.hp+=800;
+        if (itemId === 'sword1') core.status.hero.atk+=10;
+        if (itemId === 'sword2') core.status.hero.atk+=20;
+        if (itemId === 'sword5') core.status.hero.atk+=40;
+        if (itemId === 'shield1') core.status.hero.def+=10;
+        if (itemId === 'shield2') core.status.hero.def+=20;
+        if (itemId === 'shield5') core.status.hero.def+=40;
+	}
+	else {
+        core.addItem(itemId, itemNum);
+	}
+}
+
+core.prototype.getItemEffectTip = function (itemId) {
+    var currfloor = parseInt(core.status.hero.floor);
+    var hard = parseInt((currfloor+4)/5);
+
+    if (itemId === 'redJewel') return "攻击+"+(1+hard);
+    if (itemId === 'blueJewel') return "防御+"+(1+hard);
+    if (itemId === 'greenJewel') return "魔防+"+(2+3*hard);
+    // if (itemId == 'yellowJewel') core.status.hero.atk+=1+hard;
+    if (itemId === 'redPotion') return "生命+100";
+    if (itemId === 'bluePotion') return "生命+250";
+    if (itemId === 'yellowPotion') return "生命+500";
+    if (itemId === 'greenPotion') return "生命+800";
+    if (itemId === 'sword1') return "攻击+10";
+    if (itemId === 'sword2') return "攻击+20";
+    if (itemId === 'sword5') return "攻击+40";
+    if (itemId === 'shield1') return "防御+10";
+    if (itemId === 'shield2') return "防御+20";
+    if (itemId === 'shield5') return "防御+40";
+
+	return "";
+}
+
+core.prototype.getItem = function(itemId, itemNum, itemX, itemY) {
 	// core.getItemAnimate(itemId, itemNum, itemX, itemY);
-	core.addItem(itemId);
-	core.rmItem(itemX, itemY);
-	core.getItemTip('获得 ' + core.material.items[itemId].name, 'image', core.material.icons.items[itemId]);
+	core.playSound('item', 'ogg');
+    var itemCls = core.material.items[itemId].cls;
+	core.getItemEffect(itemId, itemNum);
+	core.removeBlock('event',itemX, itemY);
+	var text = '获得 ' + core.material.items[itemId].name;
+	if (itemNum>1) text += "x"+itemNum;
+	if (itemCls==='item') text += "，" + core.getItemEffectTip(itemId);
+	core.drawTip(text, 'image', core.material.icons.items[itemId]);
     core.canvas.event.clearRect(itemX * 32, itemY * 32, 32, 32);
     core.updateStatus();
 }
@@ -1263,18 +1408,19 @@ core.prototype.clearGetItemAnimate = function() {
 	}
 }
 
-core.prototype.getItemTip = function(text, type, itemIcon) {
+core.prototype.drawTip = function(text, type, itemIcon) {
 	type = type || 'normal';
 	var textX, textY, width, height, hide = false, opacityVal = 0;
 	clearInterval(core.interval.getItemTipAnimate);
-	core.canvas.ui.font = "16px Arial";
+	// core.canvas.ui.font = "16px Arial";
+	core.setFont('ui', "16px Arial");
 	core.saveCanvas('ui');
 	core.setOpacity('ui', 0);
 	if(type == 'normal') {
-		textX = 8;
-		textY = 5;
-		width = textX * 2 + core.canvas.ui.measureText(text).width;
-		height = 22;
+		textX = 16;
+		textY = 18;
+		width = textX + core.canvas.ui.measureText(text).width + 8;
+		height = 42;
 	}
 	else if(type == 'image' && core.isset(itemIcon)) {
 		textX = 44;
@@ -1294,7 +1440,7 @@ core.prototype.getItemTip = function(text, type, itemIcon) {
 			opacityVal += 0.1;
 		}
 		core.setOpacity('ui', opacityVal);
-		core.clearMap('ui', 5, 5, width+2, height);
+		core.clearMap('ui', 5, 5, 400, height);
 		core.fillRect('ui', 5, 5, width, height, '#000');
 		if(core.isset(itemIcon)) {
 			core.canvas.ui.drawImage(core.material.images['32'].items, 0, itemIcon.loc * itemIcon.size, itemIcon.size, itemIcon.size, 10, 8, itemIcon.size, itemIcon.size);
@@ -1303,7 +1449,7 @@ core.prototype.getItemTip = function(text, type, itemIcon) {
 		if(opacityVal > 0.6 || opacityVal < 0) {
 			if(hide) {
 				core.loadCanvas('ui');
-				core.clearMap('ui', 5, 5, width+2, height);
+				core.clearMap('ui', 5, 5, 400, height);
 				core.setOpacity('ui', 1);
 				clearInterval(core.interval.getItemTipAnimate);
 				return;
@@ -1328,7 +1474,7 @@ core.prototype.getItemAnimate = function(itemId, itemNum, itemX, itemY) {
 	var itemIcon = core.material.icons.items[itemId];
 	itemX = itemX * itemIcon.size;
 	itemY = itemY * itemIcon.size;
-	core.getItemTip('获得 ' + core.material.items[itemId].name + ' x ' + itemNum, 'image', itemIcon);
+	core.drawTip('获得 ' + core.material.items[itemId].name + ' x ' + itemNum, 'image', itemIcon);
 	core.interval.getItemAnimate[core.interval.getItemAnimate.length] = window.setInterval(function() {
 		top += 3;
 		core.canvas.event.clearRect(itemX, itemY, 32, 32);
@@ -1364,11 +1510,9 @@ core.prototype.setFirstItem = function() {
 		for(var itemName in core.firstData.heroItem[itemClass]) {
 			if(!core.isset(core.temp.itemList[itemClass][itemName])) {
 				core.temp.itemList[itemClass][itemName] = 0;
-				console.log(core.temp.itemList[itemClass][itemName]);
 			}
 		}
 	}
-	console.log(core.temp.itemList);
 }
 
 core.prototype.setStatus = function(statusName, statusVal) {
@@ -1395,6 +1539,17 @@ core.prototype.updateStatus = function() {
         core.statusBar[key].innerHTML = num;
 	})
 	core.statusBar.hard.innerHTML = "Hard: " + core.status.hard;
+	if (core.hasItem('book')) {
+		core.statusBar.image.book.style.opacity = 1;
+	} else {
+        core.statusBar.image.book.style.opacity = 0.3;
+	}
+    if (core.hasItem('fly')) {
+        core.statusBar.image.fly.style.opacity = 1;
+    } else {
+        core.statusBar.image.fly.style.opacity = 0.3;
+    }
+    core.updateFg();
 }
 
 core.prototype.lockControl = function() {
@@ -1452,7 +1607,7 @@ core.prototype.playSound = function(soundName, soundType) {
 	if(!core.status.soundStatus) {
 		return;
 	}
-	if(core.isset(core.temp.playedSound)) {
+	if (core.isset(core.temp.playedSound)) {
 		core.temp.playedSound.pause();
 	}
 	core.temp.playedSound = core.material.sounds[soundType][soundName];
@@ -1531,7 +1686,6 @@ core.prototype.hide = function(obj, speed, callback) {
 }
 
 core.prototype.resize = function(width, height) {
-	console.log([width, height]);
 	var halfWidth = width / 2;
 	if(width < 422) {
 		var zoom = (422 - width) / 4.22;

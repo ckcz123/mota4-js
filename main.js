@@ -39,7 +39,8 @@ function main() {
 		'64': []
 	}
 	this.sounds = {
-		'mp3': ['bgm-loop', 'floor']
+		'mp3': ['bgm-loop', 'floor'],
+		'ogg': ['attack', 'door', 'item']
 	}
 	this.statusBar = {
 		'image': {
@@ -73,10 +74,10 @@ function main() {
 	console.log('存储canvas变量已声明');
 	this.firstData = {
 		'version': 'Ver 1.0.0 (Beta)',
-		'floor': 'MT001',
+		'floor': 'MT0',
 		'heroId': 'hero1',
 		'heroName': '勇士',
-		'heroLoc': {'direction': 'down', 'x': 1, 'y': 5},
+		'heroLoc': {'direction': 'down', 'x': 6, 'y': 12},
 		'heroHp': 1000,
 		'heroAtk': 10,
 		'heroDef': 10,
@@ -105,7 +106,7 @@ main.prototype.init = function() {
 	main.loader(function() {
 		var coreData = {};
 		for(i = 0;i < main.loadList.length;i++) {
-			if(main.loadList[i] == 'core') {
+			if(main.loadList[i] === 'core') {
 				continue;
 			}
 			main[main.loadList[i]].init(main.dom);
@@ -130,7 +131,7 @@ main.prototype.loader = function(callback) {
 			for(var key in main.instance) {
 				instanceNum++;
 			}
-			if(instanceNum == main.loadList.length) {
+			if(instanceNum === main.loadList.length) {
 				delete main.instance;
 				main.dom.mainTips.style.display = 'none';
 				console.log('所有js动态加载完成 成功销毁instance');
