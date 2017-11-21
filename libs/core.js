@@ -95,13 +95,21 @@ core.prototype.init = function(dom, statusBar, canvas, images, sounds, firstData
 	core.material.enemys = core.enemys.getEnemys();
 	core.material.icons = core.icons.getIcons();
 	core.material.events = core.events.getEvents();
+
+	// test if iOS
+	var userAgent = navigator.userAgent;
+	if (userAgent.indexOf('iPhone') > -1 || userAgent.indexOf('iPad') > -1) {
+		core.status.soundStatus = false;
+	}
+
 	core.loader(function() {
-		core.playBgm('bgm', 'mp3');
-		if(core.soundPlayed('bgm', 'mp3')) {
-			core.disabledSound();
+
+		if (core.status.soundStatus) {
+            core.playBgm('bgm', 'mp3');
+            core.dom.musicBtn.src = core.material.images['25'].musicPlayed.src;
 		}
 		else {
-			core.enabledSound();
+            core.dom.musicBtn.src = core.material.images['25'].musicPaused.src;
 		}
 
 		/*

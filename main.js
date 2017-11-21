@@ -207,3 +207,28 @@ main.dom.data.ontouchstart = function(e) {
 	var loc = main.core.getClickLoc(e.targetTouches[0].clientX, e.targetTouches[0].clientY);
 	main.core.setAutomaticRoute(parseInt(loc.x / loc.size), parseInt(loc.y / loc.size));
 }
+/*
+main.dom.statusBar.image.book.onclick = function(e) {
+	main.core.openBook();
+}
+
+main.dom.statusBar.image.fly.onclick = function(e) {
+    main.core.useFly();
+}
+
+main.dom.statusBar.image.toolbox.onclick = function(e) {
+    main.core.openToolbox();
+}
+
+main.dom.statusBar.image.save.onclick = function(e) {
+    main.core.save();
+}
+
+main.dom.statusBar.image.load.onclick = function(e) {
+    main.core.load();
+}
+
+main.dom.statusBar.image.settings.onclick = function(e) {
+    main.core.openSettings();
+}
+*/
