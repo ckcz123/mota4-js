@@ -26,6 +26,9 @@ events.prototype.init = function() {
 			core.openDoor(data.event.id, data.x, data.y, true);
             if (core.isset(callback))
                 callback();
+		},
+		'visitNpc': function (data, core, callback) {
+
 		}
 	}
 }

@@ -104,9 +104,12 @@ core.prototype.init = function(dom, statusBar, canvas, images, sounds, firstData
 			core.enabledSound();
 		}
 
+		/*
 		core.showStartAnimate(function() {
 			
 		});
+		*/
+		core.playGame();
 
 
 	});
@@ -727,11 +730,13 @@ core.prototype.battle = function(id, x, y) {
         core.drawTip("你打不过此怪物！");
         return;
 	}
+	core.playSound('attack','ogg');
 	core.status.hero.hp -= damage;
     core.status.hero.gold += core.material.enemys[id].money;
     core.updateStatus();
     core.removeBlock('event',x,y);
     core.canvas.event.clearRect(32*x, 32*y, 32, 32);
+    core.updateFg();
 }
 
 core.prototype.getDamage = function (monsterId) {
@@ -1112,7 +1117,7 @@ core.prototype.trigger = function(x, y) {
 				});
 			}
 			*/
-			else if(core.isset(mapBlocks[b].event) && core.isset(mapBlocks[b].event.trigger) && (core.isset(mapBlocks[b].event.disabledTrigger) ? mapBlocks[b].event.disabledTrigger == false : true)) {
+			if(core.isset(mapBlocks[b].event) && core.isset(mapBlocks[b].event.trigger) && (core.isset(mapBlocks[b].event.disabledTrigger) ? mapBlocks[b].event.disabledTrigger == false : true)) {
 				core.material.events[mapBlocks[b].event.trigger](mapBlocks[b], core, function(data) {
 					
 				});
@@ -1258,6 +1263,8 @@ core.prototype.updateFg = function () {
 	// 更新显伤
     var mapBlocks = core.temp.thisMap.blocks;
 	core.clearMap('fg', 0, 0, 416, 416);
+	// 没有怪物手册
+	if (!core.hasItem('book')) return;
     core.setFont('fg', "bold 11px Arial");
     var hero_hp = core.status.hero.hp;
     for(var b = 0;b < mapBlocks.length;b++) {
@@ -1697,7 +1704,7 @@ core.prototype.resize = function(width, height) {
 		core.dom.gameGroup.style.width = (width - 6) + 'px';
 		core.dom.gameGroup.style.height = (top + width - 3) + 'px';
 		core.dom.startTopLoadTips.style.fontSize = '0.6rem';
-		core.dom.startBackground.style.height = (top + width) + 'px';
+		//core.dom.startBackground.style.height = (top + width) + 'px';
 		//core.dom.startButtonGroup.style.bottom = '15px';
 		//core.dom.startButtonGroup.style.fontSize = '1rem';
 		core.dom.floorMsgGroup.style.width = (width - 6) + 'px';
@@ -1808,7 +1815,7 @@ core.prototype.resize = function(width, height) {
 		core.dom.gameGroup.style.width = '416px';
 		core.dom.gameGroup.style.height = '548px';
 		core.dom.startTopLoadTips.style.fontSize = '0.6rem';
-		core.dom.startBackground.style.height = '548px';
+		//core.dom.startBackground.style.height = '548px';
 		//core.dom.startButtonGroup.style.bottom = '20px';
 		//core.dom.startButtonGroup.style.fontSize = '1.2rem';
 		core.dom.floorMsgGroup.style.width = '416px';
@@ -1919,7 +1926,7 @@ core.prototype.resize = function(width, height) {
 		core.dom.gameGroup.style.width = '548px';
 		core.dom.gameGroup.style.height = '416px';
 		core.dom.startTopLoadTips.style.fontSize = '0.6rem';
-		core.dom.startBackground.style.height = '416px';
+		//core.dom.startBackground.style.height = '416px';
 		//core.dom.startButtonGroup.style.bottom = '20px';
 		//core.dom.startButtonGroup.style.fontSize = '1.4rem';
 		core.dom.floorMsgGroup.style.width = '416px';
@@ -2024,7 +2031,7 @@ core.prototype.resize = function(width, height) {
 		core.status.screenMode = 'horizontal';
 		console.log('已调整为横屏');
 	}
-	core.dom.startBackground.style.left = '-' + ((core.dom.startBackground.offsetWidth - core.dom.gameGroup.offsetWidth) / 2) + 'px';
+	// core.dom.startBackground.style.left = '-' + ((core.dom.startBackground.offsetWidth - core.dom.gameGroup.offsetWidth) / 2) + 'px';
 }
 
 /**
