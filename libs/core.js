@@ -52,6 +52,7 @@ function core() {
 		},
 		'hard': 10,
 		'played': false,
+		'isIOS': false,
 		'soundStatus': true,
 		'heroMoving': false,
 		'heroStop': true,
@@ -100,21 +101,24 @@ core.prototype.init = function(dom, statusBar, canvas, images, sounds, firstData
 	var userAgent = navigator.userAgent;
 	if (userAgent.indexOf('iPhone') > -1 || userAgent.indexOf('iPad') > -1) {
 		console.log("你的设备为iphone，不自动播放音乐！");
+		core.status.isIOS = true;
 		core.status.soundStatus = false;
+		core.dom.musicBtn.style.display = 'none';
+	}
+	else {
+        core.dom.musicBtn.style.display = 'block';
 	}
 
 	core.loader(function() {
 
-		console.log("播放控制...");
-		if (core.status.soundStatus) {
-			console.log('播放！');
-            core.playBgm('bgm', 'mp3');
-            console.log('成功播放！');
-            core.dom.musicBtn.src = core.material.images['25'].musicPlayed.src;
-		}
-		else {
-			console.log('不播放...');
-            core.dom.musicBtn.src = core.material.images['25'].musicPaused.src;
+		if (!core.status.isIOS) {
+			if (core.status.soundStatus) {
+                core.playBgm('bgm', 'mp3');
+                core.enabledSound();
+			}
+			else {
+				core.disabledSound();
+			}
 		}
 
 		/*
@@ -122,7 +126,6 @@ core.prototype.init = function(dom, statusBar, canvas, images, sounds, firstData
 			
 		});
 		*/
-		console.log('游戏开始！');
 		core.playGame();
 
 
@@ -176,13 +179,18 @@ core.prototype.loader = function(callback) {
 	for(var key in core.images) {
 		for(var i = 0;i < core.images[key].length;i++) {
 			core.loadImage(core.images[key][i] + '-' + key + 'x' + key, key, function(imgName, imgSize, image) {
+				core.setStartLoadTipText('正在加载图片 '+imgName+"...");
 				imgName = imgName.split('-');
 				imgName = imgName[0];
 				core.material.images[imgSize][imgName] = image;
 				loadedImageNum++;
-				core.setStartLoadTipText(imgName + ' 加载完毕...');
+				// core.setStartLoadTipText(imgName + ' 加载完毕...');
 				core.setStartProgressVal(loadedImageNum * (100 / allImageNum));
 				if(loadedImageNum == allImageNum) {
+					if (core.status.isIOS) {
+						callback();
+						return;
+					}
 					core.setStartLoadTipText('图片资源加载完毕，加载音频中...');
 					core.setStartProgressVal(0);
 					for(var key in core.sounds) {
@@ -191,9 +199,10 @@ core.prototype.loader = function(callback) {
 								clearTimeout(core.timeout.loadSoundTimeout);
 								soundName = soundName.split('-');
 								soundName = soundName[0];
+                                core.setStartLoadTipText('正在加载音频 '+soundName+"...")
 								core.material.sounds[soundType][soundName] = sound;
 								loadSoundNum++;
-								core.setStartLoadTipText(soundName + ' 加载完毕...');
+								// core.setStartLoadTipText(soundName + ' 加载完毕...');
 								core.setStartProgressVal(loadSoundNum * (100 / allSoundNum));
 								if(loadSoundNum == allSoundNum) {
 									core.setStartLoadTipText('音乐资源加载完毕');
