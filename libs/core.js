@@ -99,16 +99,21 @@ core.prototype.init = function(dom, statusBar, canvas, images, sounds, firstData
 	// test if iOS
 	var userAgent = navigator.userAgent;
 	if (userAgent.indexOf('iPhone') > -1 || userAgent.indexOf('iPad') > -1) {
+		console.log("你的设备为iphone，不自动播放音乐！");
 		core.status.soundStatus = false;
 	}
 
 	core.loader(function() {
 
+		console.log("播放控制...");
 		if (core.status.soundStatus) {
+			console.log('播放！');
             core.playBgm('bgm', 'mp3');
+            console.log('成功播放！');
             core.dom.musicBtn.src = core.material.images['25'].musicPlayed.src;
 		}
 		else {
+			console.log('不播放...');
             core.dom.musicBtn.src = core.material.images['25'].musicPaused.src;
 		}
 
@@ -117,6 +122,7 @@ core.prototype.init = function(dom, statusBar, canvas, images, sounds, firstData
 			
 		});
 		*/
+		console.log('游戏开始！');
 		core.playGame();
 
 
