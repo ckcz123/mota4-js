@@ -34,7 +34,7 @@ function main() {
 	];
 	console.log('加载js文件列表加载完成' + this.loadList);
 	this.images = {
-		'25': ['musicPlayed', 'musicPaused'],
+		'25': [],
 		'32': ['animates', 'enemys', 'heros', 'items', 'npcs', 'terrains'],
 		'64': []
 	}
