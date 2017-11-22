@@ -153,6 +153,7 @@ html,body {
 
 #statusBar img {
 	position: absolute;
+	display: none;
 }
 
 #statusBar p {

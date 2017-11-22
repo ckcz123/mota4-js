@@ -164,7 +164,7 @@ window.onresize = function() {
 	main.core.resize(main.dom.body.clientWidth, main.dom.body.clientHeight);
 	console.log('当前界面已调整');
 }
-
+/*
 main.dom.body.onkeydown = function(e) {
 	if(main.core.status.lockControl) {
 		return;
@@ -178,6 +178,7 @@ main.dom.body.onkeyup = function(e) {
 	}
 	main.core.keyUp(e);
 }
+*/
 
 main.dom.musicBtn.onclick = function() {
 	if(main.core.status.lockControl) {
@@ -191,21 +192,18 @@ main.dom.body.onselectstart = function() {
 }
 
 main.dom.data.onmousedown = function(e) {
-	if(main.core.status.lockControl) {
-		return;
-	}
 	e.stopPropagation();
 	var loc = main.core.getClickLoc(e.clientX, e.clientY);
-	main.core.setAutomaticRoute(parseInt(loc.x / loc.size), parseInt(loc.y / loc.size));
+	var x=parseInt(loc.x / loc.size), y=parseInt(loc.y / loc.size);
+	main.core.onclick(x,y);
 }
 
 main.dom.data.ontouchstart = function(e) {
-	if(main.core.status.lockControl) {
-		return;
-	}
 	e.preventDefault();
 	var loc = main.core.getClickLoc(e.targetTouches[0].clientX, e.targetTouches[0].clientY);
-	main.core.setAutomaticRoute(parseInt(loc.x / loc.size), parseInt(loc.y / loc.size));
+	// main.core.setAutomaticRoute(parseInt(loc.x / loc.size), parseInt(loc.y / loc.size));
+    var x=parseInt(loc.x / loc.size), y=parseInt(loc.y / loc.size);
+	main.core.onclick(x,y);
 }
 
 main.statusBar.image.book.onclick = function() {

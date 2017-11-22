@@ -32,6 +32,7 @@ function core() {
 	this.interval = {
 		'twoAnimate': null,
 		'fourAnimate': null,
+		'boxAnimate': null,
 		'changeAnimate': null,
 		'heroMoveTriggerInterval': null,
 		'heroMoveInterval': null,
@@ -59,11 +60,13 @@ function core() {
 		'heroStop': true,
 		'currentOpen': null,
 		'lockControl': false,
-		'keyBoardLock': false,
+		// 'keyBoardLock': false,
 		'mouseLock': false,
 		'autoHeroMove': false,
 		'automaticRouting': false,
 		'automaticRoued': false,
+		'currentPage': 1,
+		'savePage': 1,
 		'screenMode': 'adaptive'
 	}
 	this.temp = {
@@ -73,6 +76,7 @@ function core() {
 		'playedBgm': null,
 		'twoAnimateObjs': [],
 		'fourAnimateObjs': [],
+		'boxAnimateObjs': [],
 		'openingDoor': null,
 		'heroLoc': {'direction': 'down', 'x': 0, 'y': 1},
 		'autoStep': 0,
@@ -277,7 +281,7 @@ core.prototype.playGame = function() {
 		});
 	});
 }
-
+/*
 core.prototype.keyDown = function(e) {
 	if(!core.status.played || core.status.keyBoardLock) {
 		return;
@@ -319,9 +323,26 @@ core.prototype.keyUp = function(e) {
 	core.unLockKeyBoard();
 	core.stopHero();
 }
+*/
 
 core.prototype.musicBtnClick = function() {
 	core.changeSoundStatus();
+}
+
+core.prototype.onclick = function(x,y) {
+    console.log("Click: ("+x+","+y+")");
+
+    // 寻路
+    if (!core.status.lockControl) {
+
+        core.setAutomaticRoute(x, y);
+    	return;
+	}
+
+    //
+
+
+
 }
 
 /**
@@ -333,7 +354,7 @@ core.prototype.musicBtnClick = function() {
  */
 
 core.prototype.clearAutomaticRouteNode = function(x, y) {
-	core.canvas.data.clearRect(x * 32 + 5, y * 32 + 5, 27, 27);
+	core.canvas.ui.clearRect(x * 32 + 5, y * 32 + 5, 27, 27);
 }
 
 core.prototype.stopAutomaticRoute = function() {
@@ -344,7 +365,7 @@ core.prototype.stopAutomaticRoute = function() {
 	core.status.automaticRouting = false;
 	core.status.automaticRoued = false;
 	core.temp.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
-	core.canvas.data.clearRect(0, 0, 416, 416);
+	core.canvas.ui.clearRect(0, 0, 416, 416);
 }
 
 core.prototype.setAutomaticRoute = function(destX, destY) {
@@ -366,16 +387,16 @@ core.prototype.setAutomaticRoute = function(destX, destY) {
 	var moveStep;
 	core.temp.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
 	if(!(moveStep = core.automaticRoute(destX, destY))) {
-		core.canvas.data.clearRect(0, 0, 416, 416);
+		core.canvas.ui.clearRect(0, 0, 416, 416);
 		return false;
 	}
 	core.temp.automaticRoutingTemp.destX = destX;
 	core.temp.automaticRoutingTemp.destY = destY;
-	core.canvas.data.save();
-	core.canvas.data.clearRect(0, 0, 416, 416);
-	core.canvas.data.fillStyle = '#bfbfbf';
-	core.canvas.data.strokeStyle = '#bfbfbf';
-	core.canvas.data.lineWidth = 8;
+	core.canvas.ui.save();
+	core.canvas.ui.clearRect(0, 0, 416, 416);
+	core.canvas.ui.fillStyle = '#bfbfbf';
+	core.canvas.ui.strokeStyle = '#bfbfbf';
+	core.canvas.ui.lineWidth = 8;
 	for(var m = 0;m < moveStep.length;m++) {
 		if(tempStep == null) {
 			step++;
@@ -391,53 +412,53 @@ core.prototype.setAutomaticRoute = function(destX, destY) {
 		}
 		if(m == moveStep.length - 1) {
 			core.temp.automaticRoutingTemp.moveStep.push({'direction': tempStep, 'step': step});
-			core.canvas.data.fillRect(moveStep[m].x * 32 + 10, moveStep[m].y * 32 + 10, 12, 12);
+			core.canvas.ui.fillRect(moveStep[m].x * 32 + 10, moveStep[m].y * 32 + 10, 12, 12);
 		}
 		else {
-			core.canvas.data.beginPath();
+			core.canvas.ui.beginPath();
 			if(core.isset(moveStep[m + 1]) && tempStep != moveStep[m + 1].direction) {
 				if(tempStep == 'up' && moveStep[m + 1].direction == 'left' || tempStep == 'right' && moveStep[m + 1].direction == 'down') {
-					core.canvas.data.moveTo(moveStep[m].x * 32 + 5, moveStep[m].y * 32 + 16);
-					core.canvas.data.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 16);
-					core.canvas.data.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 27);
+					core.canvas.ui.moveTo(moveStep[m].x * 32 + 5, moveStep[m].y * 32 + 16);
+					core.canvas.ui.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 16);
+					core.canvas.ui.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 27);
 				}
 				else if(tempStep == 'up' && moveStep[m + 1].direction == 'right' || tempStep == 'left' && moveStep[m + 1].direction == 'down') {
-					core.canvas.data.moveTo(moveStep[m].x * 32 + 27, moveStep[m].y * 32 + 16);
-					core.canvas.data.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 16);
-					core.canvas.data.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 27);
+					core.canvas.ui.moveTo(moveStep[m].x * 32 + 27, moveStep[m].y * 32 + 16);
+					core.canvas.ui.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 16);
+					core.canvas.ui.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 27);
 				}
 				else if(tempStep == 'left' && moveStep[m + 1].direction == 'up' || tempStep == 'down' && moveStep[m + 1].direction == 'right') {
-					core.canvas.data.moveTo(moveStep[m].x * 32 + 27, moveStep[m].y * 32 + 16);
-					core.canvas.data.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 16);
-					core.canvas.data.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 5);
+					core.canvas.ui.moveTo(moveStep[m].x * 32 + 27, moveStep[m].y * 32 + 16);
+					core.canvas.ui.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 16);
+					core.canvas.ui.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 5);
 				}
 				else if(tempStep == 'right' && moveStep[m + 1].direction == 'up' || tempStep == 'down' && moveStep[m + 1].direction == 'left') {
-					core.canvas.data.moveTo(moveStep[m].x * 32 + 5, moveStep[m].y * 32 + 16);
-					core.canvas.data.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 16);
-					core.canvas.data.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 5);
+					core.canvas.ui.moveTo(moveStep[m].x * 32 + 5, moveStep[m].y * 32 + 16);
+					core.canvas.ui.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 16);
+					core.canvas.ui.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 5);
 				}
-				core.canvas.data.stroke();
+				core.canvas.ui.stroke();
 				continue;
 			}
 			switch(tempStep) {
 				case 'up':
 				case 'down':
-					core.canvas.data.beginPath();
-					core.canvas.data.moveTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 5);
-					core.canvas.data.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 27);
-					core.canvas.data.stroke();
+					core.canvas.ui.beginPath();
+					core.canvas.ui.moveTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 5);
+					core.canvas.ui.lineTo(moveStep[m].x * 32 + 16, moveStep[m].y * 32 + 27);
+					core.canvas.ui.stroke();
 				break;
 				case 'left':
 				case 'right':
-					core.canvas.data.beginPath();
-					core.canvas.data.moveTo(moveStep[m].x * 32 + 5, moveStep[m].y * 32 + 16);
-					core.canvas.data.lineTo(moveStep[m].x * 32 + 27, moveStep[m].y * 32 + 16);
-					core.canvas.data.stroke();
+					core.canvas.ui.beginPath();
+					core.canvas.ui.moveTo(moveStep[m].x * 32 + 5, moveStep[m].y * 32 + 16);
+					core.canvas.ui.lineTo(moveStep[m].x * 32 + 27, moveStep[m].y * 32 + 16);
+					core.canvas.ui.stroke();
 				break;
 			}
 		}
 	}
-	core.canvas.data.restore();
+	core.canvas.ui.restore();
 	core.status.automaticRoued = true;
 }
 // BFS
@@ -660,7 +681,7 @@ core.prototype.setHeroMoveTriggerInterval = function() {
 					}
 				}
 				else {
-					core.lockKeyBoard();
+					// core.lockKeyBoard();
 					core.status.heroStop = true;
 				}
 				return;
@@ -719,7 +740,6 @@ core.prototype.drawHero = function(direction, x, y, status, offsetX, offsetY) {
 core.prototype.openDoor = function (id, x, y, needKey) {
     // core.lockControl();
     core.stopHero();
-    core.stopAutoHeroMove();
     core.stopAutomaticRoute();
 	if (needKey) {
 		var key = id.replace("Door","Key");
@@ -750,7 +770,6 @@ core.prototype.openDoor = function (id, x, y, needKey) {
 
 core.prototype.battle = function(id, x, y) {
     core.stopHero();
-    core.stopAutoHeroMove();
     core.stopAutomaticRoute();
 
     var damage=core.getDamage(id);
@@ -779,13 +798,13 @@ core.prototype.getCritical = function (monsterId) {
     var monster = core.material.enemys[monsterId];
     if (monster.special==3) return "???";
     var last=core.calDamage(core.status.hero.atk, core.status.hero.def, core.status.hero.mdef,
-		monster.hp, monster.atk, monster.def, monster.mdef);
+		monster.hp, monster.atk, monster.def, monster.special);
     if (last==0) return 0;
 
     for (var i = core.status.hero.atk+1; i <= monster.hp+monster.def; i++)
     {
         var damage = core.calDamage(i, core.status.hero.def, core.status.hero.mdef,
-        		monster.hp, monster.atk, monster.def, monster.mdef);
+        		monster.hp, monster.atk, monster.def, monster.special);
         if (damage < last)
             return i-core.status.hero.atk;
         last = damage;
@@ -800,18 +819,18 @@ core.prototype.getCriticalDamage = function (monsterId) {
     var monster = core.material.enemys[monsterId];
     // if (c<=0) return 0;
     var last=core.calDamage(core.status.hero.atk, core.status.hero.def, core.status.hero.mdef,
-        monster.hp, monster.atk, monster.def, monster.mdef);
+        monster.hp, monster.atk, monster.def, monster.special);
     if (last==999999999) return '???';
 
     return last-core.calDamage(core.status.hero.atk+c, core.status.hero.def, core.status.hero.mdef,
-        monster.hp, monster.atk, monster.def, monster.mdef);
+        monster.hp, monster.atk, monster.def, monster.special);
 }
 
 core.prototype.getDefDamage = function (monsterId) {
     var monster = core.material.enemys[monsterId];
     return core.getDamage(monsterId)-
         core.calDamage(core.status.hero.atk, core.status.hero.def+1, core.status.hero.mdef,
-            monster.hp, monster.atk, monster.def, monster.mdef)
+            monster.hp, monster.atk, monster.def, monster.special)
 }
 
 core.prototype.calDamage = function (hero_atk, hero_def, hero_mdef, mon_hp, mon_atk, mon_def, mon_special) {
@@ -857,8 +876,6 @@ core.prototype.calDamage = function (hero_atk, hero_def, hero_mdef, mon_hp, mon_
 core.prototype.changeFloor = function(floorId, stair, heroLoc) {
 	core.lockControl();
 	core.stopHero();
-	core.stopAutoHeroMove();
-	core.stopAutomaticRoute();
 	core.setFloorName(floorId);
 	if (core.isset(stair)) {
 		// find heroLoc
@@ -873,7 +890,7 @@ core.prototype.changeFloor = function(floorId, stair, heroLoc) {
 	}
 
  	window.setTimeout(function() {
- 		console.log('地图切换到' + floorId);
+ 		// console.log('地图切换到' + floorId);
         core.playSound('floor', 'mp3');
  		core.mapChangeAnimate('show', function() {
             core.setStatus('floor', core.material.maps[floorId].floor);
@@ -999,6 +1016,15 @@ core.prototype.setAlpha = function(map, alpha) {
 		}
 	}
 	else core.canvas[map].globalAlpha = alpha;
+}
+
+core.prototype.setOpacity = function (map, opacity) {
+    if (map=='all') {
+        for (var m in core.canvas) {
+            core.canvas[m].canvas.style.opacity = opacity;
+        }
+    }
+    else core.canvas[map].canvas.style.opacity = opacity;
 }
 
 core.prototype.setFillStyle = function(map, style) {
@@ -1319,6 +1345,23 @@ core.prototype.setGlobalAnimate = function(speed) {
 	}, speed / 2);
 }
 
+core.prototype.setBoxAnimate = function(speed) {
+    clearInterval(core.interval.boxAnimate);
+    if (core.temp.boxAnimateObjs.length>0) {
+        var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
+    	core.interval.boxAnimate = setInterval(function () {
+			for (var a=0;a<core.temp.boxAnimateObjs.length;a++) {
+				var obj = core.temp.boxAnimateObjs[a];
+				obj.status = obj.status==0?1:0;
+                core.clearMap('ui', obj.bgx, obj.bgy, obj.bgsize, obj.bgsize);
+                core.fillRect('ui', obj.bgx, obj.bgy, obj.bgsize, obj.bgsize, background);
+                core.canvas.ui.drawImage(obj.image, obj.status*32, obj.loc*32,
+					32, 32, obj.x, obj.y, 32, 32);
+            }
+        }, speed);
+	}
+}
+
 core.prototype.setHeroLoc = function(itemName, itemVal) {
 	if(itemVal == '++') {
 		core.temp.heroLoc[itemName]++;
@@ -1493,24 +1536,23 @@ core.prototype.drawTip = function(text, type, itemIcon) {
 	type = type || 'normal';
 	var textX, textY, width, height, hide = false, opacityVal = 0;
 	clearInterval(core.interval.getItemTipAnimate);
-	// core.canvas.ui.font = "16px Arial";
-	core.setFont('ui', "16px Arial");
-	core.saveCanvas('ui');
-	core.setOpacity('ui', 0);
+	core.setFont('data', "16px Arial");
+	core.saveCanvas('data');
+	core.setOpacity('data', 0);
 	if(type == 'normal') {
 		textX = 16;
 		textY = 18;
-		width = textX + core.canvas.ui.measureText(text).width + 8;
+		width = textX + core.canvas.data.measureText(text).width + 16;
 		height = 42;
 	}
 	else if(type == 'image' && core.isset(itemIcon)) {
 		textX = 44;
 		textY = 18;
-		width = textX + core.canvas.ui.measureText(text).width + 8;
+		width = textX + core.canvas.data.measureText(text).width + 8;
 		height = 42;
 	}
 	else {
-		core.loadCanvas('ui');
+		core.loadCanvas('data');
 		return;
 	}
 	core.interval.getItemTipAnimate = window.setInterval(function() {
@@ -1520,18 +1562,18 @@ core.prototype.drawTip = function(text, type, itemIcon) {
 		else {
 			opacityVal += 0.1;
 		}
-		core.setOpacity('ui', opacityVal);
-		core.clearMap('ui', 5, 5, 400, height);
-		core.fillRect('ui', 5, 5, width, height, '#000');
+		core.setOpacity('data', opacityVal);
+		core.clearMap('data', 5, 5, 400, height);
+		core.fillRect('data', 5, 5, width, height, '#000');
 		if(core.isset(itemIcon)) {
-			core.canvas.ui.drawImage(core.material.images['32'].items, 0, itemIcon.loc * itemIcon.size, itemIcon.size, itemIcon.size, 10, 8, itemIcon.size, itemIcon.size);
+			core.canvas.data.drawImage(core.material.images['32'].items, 0, itemIcon.loc * itemIcon.size, itemIcon.size, itemIcon.size, 10, 8, itemIcon.size, itemIcon.size);
 		}
-		core.fillText('ui', text, textX + 5, textY + 15, '#fff');
+		core.fillText('data', text, textX + 5, textY + 15, '#fff');
 		if(opacityVal > 0.6 || opacityVal < 0) {
 			if(hide) {
-				core.loadCanvas('ui');
-				core.clearMap('ui', 5, 5, 400, height);
-				core.setOpacity('ui', 1);
+				core.loadCanvas('data');
+				core.clearMap('data', 5, 5, 400, height);
+				core.setOpacity('data', 1);
 				clearInterval(core.interval.getItemTipAnimate);
 				return;
 			}
@@ -1543,7 +1585,7 @@ core.prototype.drawTip = function(text, type, itemIcon) {
 					}, 1000);
 				}
 				opacityVal = 0.6;
-				core.setOpacity('ui', opacityVal);
+				core.setOpacity('data', opacityVal);
 			}
 		}
 	}, 30);
@@ -1582,79 +1624,159 @@ core.prototype.openBook = function() {
 		core.drawTip("你没有怪物手册");
 		return;
 	}
+	if (!core.status.heroStop) {
+		core.drawTip("请先停止勇士行动");
+		return;
+	}
 	if (core.status.currentOpen == 'book') {
-		core.clearMap('data', 0, 0, 416, 416);
-		core.setAlpha('data', 1.0);
+		// close book
+		core.temp.boxAnimateObjs = [];
+		core.setBoxAnimate(core.firstData.animateSpeed);
+		core.clearMap('ui', 0, 0, 416, 416);
+		core.setAlpha('ui', 1.0);
 		core.unLockControl();
-		core.unLockKeyBoard();
 		core.status.currentOpen = null;
 		return;
 	}
 	if (core.status.lockControl) return;
 
 	core.lockControl();
-	core.lockKeyBoard();
+    core.temp.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
 	core.status.currentOpen = 'book';
-
-	var enemys = [];
-	var used = {};
-    var mapBlocks = core.temp.thisMap.blocks;
-    for(var b = 0;b < mapBlocks.length;b++) {
-    	if (core.isset(mapBlocks[b].event) && mapBlocks[b].event.cls == 'enemys') {
-    		var monsterId = mapBlocks[b].event.id;
-    		if (core.isset(used[monsterId])) continue;
-
-    		var monster = core.material.enemys[monsterId];
-
-    		enemys.push({
-				'id': monsterId, 'name': monster.name, 'hp': monster.hp, 'atk': monster.atk, 'def': monster.def,
-				'money': monster.money, 'special': core.enemys.getSpecialText(monsterId),
-				'damage': core.getDamage(monsterId), 'critical': core.getCritical(monsterId),
-				'criticalDamage': core.getCriticalDamage(monsterId), 'defDamage': core.getDefDamage(monsterId)
-			});
-
-    		used[monsterId] = true;
-		}
-    }
-
-    enemys.sort(function (a, b) {
-    	if (a.damage == b.damage) {
-    		return a.money - b.money;
-		}
-		return a.damage - b.damage;
-    });
 
     // console.log(enemys);
 
     // showEnemyBook
-	core.drawEnemyBook(enemys, 1);
+	core.drawEnemyBook(1);
 
 }
 
-core.prototype.drawEnemyBook = function (enemys, page) {
+core.prototype.getCurrentEnemys = function() {
+    var enemys = [];
+    var used = {};
+    var mapBlocks = core.temp.thisMap.blocks;
+    for(var b = 0;b < mapBlocks.length;b++) {
+        if (core.isset(mapBlocks[b].event) && mapBlocks[b].event.cls == 'enemys') {
+            var monsterId = mapBlocks[b].event.id;
+            if (core.isset(used[monsterId])) continue;
 
-    var background = core.canvas.data.createPattern(core.material.ground, "repeat");
+            var monster = core.material.enemys[monsterId];
 
-	core.clearMap('data', 0, 0, 416, 416);
+            enemys.push({
+                'id': monsterId, 'name': monster.name, 'hp': monster.hp, 'atk': monster.atk, 'def': monster.def,
+                'money': monster.money, 'special': core.enemys.getSpecialText(monsterId),
+                'damage': core.getDamage(monsterId), 'critical': core.getCritical(monsterId),
+                'criticalDamage': core.getCriticalDamage(monsterId), 'defDamage': core.getDefDamage(monsterId)
+            });
 
-    core.setAlpha('data', 1);
-    core.setFillStyle('data', background);
-    core.fillRect('data', 0, 0, 416, 416);
+            used[monsterId] = true;
+        }
+    }
 
-	core.setAlpha('data', 0.6);
-	core.setFillStyle('data', '#000000');
-	core.fillRect('data', 0, 0, 416, 416);
+    enemys.sort(function (a, b) {
+        if (a.damage == b.damage) {
+            return a.money - b.money;
+        }
+        return a.damage - b.damage;
+    });
+    return enemys;
+}
 
-    core.setAlpha('data', 1);
-	core.canvas.data.textAlign = 'left';
+core.prototype.drawEnemyBook = function (page) {
+
+	var enemys = core.getCurrentEnemys();
+
+    var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
+
+	core.clearMap('ui', 0, 0, 416, 416);
+
+    core.setAlpha('ui', 1);
+    core.setFillStyle('ui', background);
+    core.fillRect('ui', 0, 0, 416, 416);
+
+	core.setAlpha('ui', 0.6);
+	core.setFillStyle('ui', '#000000');
+	core.fillRect('ui', 0, 0, 416, 416);
+
+    core.setAlpha('ui', 1);
+	core.canvas.ui.textAlign = 'left';
+    core.setFont('ui', 'bold 15px Verdana');
+
 	if (enemys.length == 0) {
-		core.fillText('data', "本层无怪物", 83, 222, '#999999', "bold 50px Verdana");
+		core.fillText('ui', "本层无怪物", 83, 222, '#999999', "bold 50px Verdana");
 		return;
 	}
 
 	var perpage = 6;
+	var totalPage = parseInt((enemys.length-1)/perpage)+1;
+	if (page<1) page=1;
+	if (page>totalPage) page=totalPage;
+	core.status.currentPage = page;
+	var start = (page-1)*perpage, end = Math.min(page*perpage, enemys.length);
 
+	enemys = enemys.slice(start, end);
+    core.temp.boxAnimateObjs = [];
 
+    for (var i = 0; i < enemys.length; i++) {
+		// 边框
+        //core.setStokeStyle('ui', '#FFFFFF');
+        //core.setLineWidth('ui', 2);
+		var enemy = enemys[i];
+        core.strokeRect('ui', 22, 62*i+22, 42, 42, '#DDDDDD', 2);
+
+        // 怪物
+		core.temp.boxAnimateObjs.push({
+			'bgx': 22, 'bgy': 62*i+22, 'bgsize': 42,
+			'image': core.material.images['32'].enemys, 'loc': core.material.icons.enemys[enemy.id].loc,
+			'x': 27, 'y': 62*i+27
+		});
+
+		// 数据
+        core.fillText('ui', enemy.name, 82, 62*i+47, '#DDDDDD', 'bold 17px Verdana');
+		core.fillText('ui', '生命', 170, 62*i+35, '#DDDDDD', '13px Verdana');
+		core.fillText('ui', enemy.hp, 200, 62*i+35, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '攻击', 260, 62*i+35, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.atk, 290, 62*i+35, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '防御', 340, 62*i+35, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.def, 370, 62*i+35, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '金币', 170, 62*i+53, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.money, 200, 62*i+53, '#DDDDDD', 'bold 13px Verdana');
+
+        var damage=enemy.damage;
+        var color='#FFFF00';
+        if (damage>=core.status.hero.hp) color='#FF0000';
+        if (damage==0) color='#00FF00';
+        if (damage==999999999) damage='无法战斗';
+        var length=core.canvas.ui.measureText(damage).width;
+        core.fillText('ui', damage, 330-length/2, 62*i+53, color, 'bold 13px Verdana');
+
+        core.fillText('ui', '临界', 170, 62*i+71, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.critical, 200, 62*i+71, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '减伤', 260, 62*i+71, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.criticalDamage, 290, 62*i+71, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '1防', 340, 62*i+71, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.defDamage, 370, 62*i+71, '#DDDDDD', 'bold 13px Verdana');
+
+    }
+
+    core.setBoxAnimate(core.firstData.speed);
+    core.drawPagination(page,totalPage);
+
+}
+
+core.prototype.drawPagination = function(page, totalPage) {
+
+    core.setFont('ui', 'bold 15px Verdana');
+    core.setFillStyle('ui', '#DDDDDD');
+
+    var textLength = core.canvas.ui.measureText("上一页").width;
+    var length = core.canvas.ui.measureText(page+" / "+page).width;
+
+    if (page!=1)
+	    core.fillText('ui', '上一页', 208-60-textLength, 403);
+    core.fillText('ui', page + " / " + totalPage, (416-length)/2, 403);
+    if (page!=totalPage)
+	    core.fillText('ui', '下一页', 208+60, 403);
 
 }
 
@@ -1721,7 +1843,7 @@ core.prototype.lockControl = function() {
 core.prototype.unLockControl = function() {
 	core.status.lockControl = false;
 }
-
+/*
 core.prototype.lockKeyBoard = function() {
 	core.status.keyBoardLock = true;
 }
@@ -1729,6 +1851,7 @@ core.prototype.lockKeyBoard = function() {
 core.prototype.unLockKeyBoard = function() {
 	core.status.keyBoardLock = false;
 }
+*/
 
 core.prototype.isset = function(val) {
 	if(val == undefined || val == null) {
@@ -1848,6 +1971,13 @@ core.prototype.hide = function(obj, speed, callback) {
 }
 
 core.prototype.resize = function(width, height) {
+
+	// show image
+
+	for (var x in core.statusBar.image) {
+		core.statusBar.image[x].style.display = 'block';
+	}
+
 	var halfWidth = width / 2;
 	if(width < 422) {
 		var zoom = (422 - width) / 4.22;
