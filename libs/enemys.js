@@ -13,7 +13,7 @@ enemys.prototype.init = function() {
         'redBat': {'name': '红蝙蝠', 'hp': 439, 'atk': 260, 'def': 140, 'money': 30, 'special': 0},
         'vampire': {'name': '冥灵魔王', 'hp': 700, 'atk': 286, 'def': 120, 'money': 27, 'special': 0},
         'skeleton': {'name': '骷髅人', 'hp': 223, 'atk': 44, 'def': 3, 'money': 5, 'special': 0},
-        'skeletonSoilder': {'name': '骷髅士兵', 'hp': 34300, 'atk': 5800, 'def': 1000, 'money': 800, 'special': 0},
+        'skeletonSoilder': {'name': '骷髅士兵', 'hp': 343, 'atk': 58, 'def': 10, 'money': 8, 'special': 0},
         'skeletonCaptain': {'name': '骷髅队长', 'hp': 600, 'atk': 110, 'def': 20, 'money': 13, 'special': 0},
         'ghostSkeleton': {'name': '冥队长', 'hp': 836, 'atk': 236, 'def': 81, 'money': 28, 'special': 0},
         'zombie': {'name': '兽面人', 'hp': 646, 'atk': 104, 'def': 52, 'money': 17, 'special': 0},

@@ -50,7 +50,7 @@ function core() {
 			'atk': 0,
 			'def': 0,
 			'mdef': 0,
-			'gold': 0,
+			'money': 0,
 		},
 		'hard': 10,
 		'played': false,
@@ -65,8 +65,9 @@ function core() {
 		'autoHeroMove': false,
 		'automaticRouting': false,
 		'automaticRoued': false,
-		'currentPage': 1,
 		'savePage': 1,
+		'shops': {},
+		'currentEvent': null,
 		'screenMode': 'adaptive'
 	}
 	this.temp = {
@@ -96,6 +97,7 @@ core.prototype.init = function(dom, statusBar, canvas, images, sounds, firstData
 	for(var key in coreData) {
 		core[key] = coreData[key];
 	}
+	core.status.shops = firstData.shops;
 	core.dom.versionLabel.innerHTML = firstData.version;
 	core.material.items = core.items.getItems();
 	core.material.maps = core.maps.getMaps();
@@ -109,10 +111,6 @@ core.prototype.init = function(dom, statusBar, canvas, images, sounds, firstData
 		console.log("你的设备为iphone，不自动播放音乐！");
 		core.status.isIOS = true;
 		core.status.soundStatus = false;
-		core.dom.musicBtn.style.display = 'none';
-	}
-	else {
-        core.dom.musicBtn.style.display = 'block';
 	}
 
 	core.material.ground = new Image();
@@ -268,7 +266,7 @@ core.prototype.playGame = function() {
 	console.log('开始游戏');
 	core.setFirstItem();
 	core.setFloorName(core.firstData.floor);
-	core.updateStatus();
+	core.updateStatusBar();
 	core.hideStartAnimate(function() {
 		core.drawMap(core.firstData.floor, function() {
 			core.playSound('floor', 'mp3');
@@ -325,23 +323,145 @@ core.prototype.keyUp = function(e) {
 }
 */
 
-core.prototype.musicBtnClick = function() {
-	core.changeSoundStatus();
-}
-
 core.prototype.onclick = function(x,y) {
     console.log("Click: ("+x+","+y+")");
 
     // 寻路
     if (!core.status.lockControl) {
-
         core.setAutomaticRoute(x, y);
     	return;
 	}
 
-    //
+    // 怪物手册
+	if (core.status.currentOpen=='book') {
+		// 上一页
+		if ((x==3 || x==4) && y==12) {
+			core.drawEnemyBook(core.status.currentEvent-1);
+		}
+		// 下一页
+		if ((x==8 || x==9) && y==12) {
+            core.drawEnemyBook(core.status.currentEvent+1);
+		}
+		return;
+	}
+
+	// 设置
+	if (core.status.currentOpen=='settings') {
+    	if (x>=5 && x<=7) {
+    		if (y==3) {
+    			if (core.status.isIOS) {
+    				core.drawTip("iOS设备不支持播放音乐");
+    				return;
+				}
+				core.changeSoundStatus();
+    			core.openSettings(false);
+			}
+			if (y==4) core.selectShop();
+			if (y==5) core.save(false);
+			if (y==6) core.load(false);
+			if (y==7) {
+				if (core.status.hard==0) {
+					core.drawTip("当前已是难度0，不能再咸鱼了");
+					return;
+				}
+				core.showConfirmBox("本次咸鱼可生命+"+(1100-100*core.status.hard)+"，确定吗？", function() {
+					var add=1100-100*core.status.hard;
+					core.status.hero.hp+=add;
+					core.status.hard--;
+					core.updateStatusBar();
+					core.closePanel();
+                    core.drawTip("咸鱼成功，生命+"+add);
+				}, function() {
+                    core.openSettings(false);
+				});
+			}
+			if (y==8) {
+                core.showConfirmBox("你确定要重新开始吗？", function() {
+                	console.log("重新开始游戏...");
+                    core.closePanel();
+                }, function() {
+                    core.openSettings(false);
+                });
+			}
+			if (y==9) core.closePanel();
+			return;
+		}
 
 
+	}
+
+	// 商店
+	if (core.status.currentOpen=='shop') {
+    	if (core.status.currentEvent==null) {
+    		console.log("发生错误，商店不存在？");
+    		return;
+		}
+    	if (x>=5 && x<=7) {
+    		if (y>=5 && y<=8) {
+    			if (y>=5+core.status.currentEvent.choices.length) return;
+
+    			var hp=core.getStatus('hp'), atk=core.getStatus('atk'),
+					def=core.getStatus('def'), mdef=core.getStatus('mdef'),
+					money=core.getStatus('money'), yellowKey=core.itemCount('yellowKey'),
+					blueKey=core.itemCount('blueKey'), redKey=core.itemCount('redKey');
+    			var times=core.status.currentEvent.times, need=eval(core.status.currentEvent.need);
+    			if (need>money) {
+    				core.drawTip("你的金币不足");
+    				return;
+				}
+				money-=need;
+    			eval(core.status.currentEvent.choices[y-5].effect);
+    			core.setStatus('hp', hp); core.setStatus('atk', atk); core.setStatus('def', def);
+                core.setStatus('mdef', mdef); core.setStatus('money', money);
+                core.setItem('yellowKey', yellowKey); core.setItem('blueKey', blueKey);
+                core.setItem('redKey', redKey);
+                core.updateStatusBar();
+                core.status.currentEvent.times++;
+                core.openShop(core.status.currentEvent.id);
+				return;
+            }
+
+    		// 退出商店
+    		if (y==9) {
+    			core.status.currentEvent = null;
+    			core.closePanel();
+    			return;
+			}
+		}
+	}
+
+	// 快捷商店
+    if (core.status.currentOpen=='selectShop') {
+    	if (x>=5 && x<=7) {
+
+            var shopList = core.status.shops, keys=Object.keys(shopList);
+            var topIndex=6-parseInt((keys.length+1)/2);
+            var exitIndex=6+parseInt((keys.length+1)/2);
+
+            if (y>=topIndex && y-topIndex<keys.length) {
+            	// core.openShop(keys[y-topIndex]);
+				if (!shopList[keys[y-topIndex]].visited) {
+					core.drawTip('该商店尚未开启');
+					return;
+				}
+                core.openShop(keys[y-topIndex]);
+			}
+			if (y==exitIndex) {
+                core.closePanel();
+			}
+		}
+		return;
+    }
+
+
+	// 选项
+	if (core.status.currentOpen=='confirmBox') {
+    	if ((x==4 || x==5) && y==7 && core.isset(core.status.currentEvent.yes))
+    		core.status.currentEvent.yes();
+        if ((x==7 || x==8) && y==7 && core.isset(core.status.currentEvent.no))
+            core.status.currentEvent.no();
+		return;
+	}
 
 }
 
@@ -376,12 +496,25 @@ core.prototype.setAutomaticRoute = function(destX, destY) {
 		core.stopAutomaticRoute();
 		return;
 	}
+	if(destX==core.temp.heroLoc.x && destY==core.temp.heroLoc.y) {
+		if (core.temp.heroLoc.direction=='up') core.temp.heroLoc.direction='right';
+		else if (core.temp.heroLoc.direction=='right') core.temp.heroLoc.direction='down';
+        else if (core.temp.heroLoc.direction=='down') core.temp.heroLoc.direction='left';
+        else if (core.temp.heroLoc.direction=='left') core.temp.heroLoc.direction='up';
+        core.drawHero(core.temp.heroLoc.direction, core.temp.heroLoc.x, core.temp.heroLoc.y,'stop',0,0);
+        core.temp.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
+        core.canvas.ui.clearRect(0, 0, 416, 416);
+		return;
+	}
+	// 直接移动
+	/*
 	if(core.temp.automaticRoutingTemp.moveStep.length != 0 && core.temp.automaticRoutingTemp.destX == destX && core.temp.automaticRoutingTemp.destY == destY) {
 		core.status.automaticRouting = true;
 		core.setAutoHeroMove(core.temp.automaticRoutingTemp.moveStep);
 		core.temp.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
 		return;
 	}
+	*/
 	var step = 0;
 	var tempStep = null;
 	var moveStep;
@@ -460,6 +593,12 @@ core.prototype.setAutomaticRoute = function(destX, destY) {
 	}
 	core.canvas.ui.restore();
 	core.status.automaticRoued = true;
+
+	// 立刻移动
+    core.status.automaticRouting = true;
+    core.setAutoHeroMove(core.temp.automaticRoutingTemp.moveStep);
+    core.temp.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
+
 }
 // BFS
 core.prototype.automaticRoute = function(destX, destY) {
@@ -738,6 +877,8 @@ core.prototype.drawHero = function(direction, x, y, status, offsetX, offsetY) {
  */
 
 core.prototype.openDoor = function (id, x, y, needKey) {
+	// 是否存在门
+	if (!core.terrainExists(x,y,id)) return;
     // core.lockControl();
     core.stopHero();
     core.stopAutomaticRoute();
@@ -779,12 +920,29 @@ core.prototype.battle = function(id, x, y) {
 	}
 	core.playSound('attack','ogg');
 	core.status.hero.hp -= damage;
-    core.status.hero.gold += core.material.enemys[id].money;
-    core.updateStatus();
+    core.status.hero.money += core.material.enemys[id].money;
+    core.updateStatusBar();
     core.removeBlock('event',x,y);
     core.canvas.event.clearRect(32*x, 32*y, 32, 32);
     core.updateFg();
     core.drawTip("打败 "+core.material.enemys[id].name+"，金币+"+core.material.enemys[id].money);
+
+    // 打完怪物，触发事件
+
+    if (id=='skeleton' && core.temp.thisMap.floor==3 && !core.enemyExists(9,4) && !core.enemyExists(11,4)) {
+        // 3楼商店门
+        core.openDoor('specialDoor', 10, 3, false);
+    }
+    if (id=='skeletonSoilder' && core.temp.thisMap.floor==3 && !core.enemyExists(9,9) && !core.enemyExists(11,9)) {
+    	// 3楼盾前门
+        core.openDoor('specialDoor', 10, 8, false);
+	}
+	if (id=='skeletonCaptain' && core.temp.thisMap.floor==5) {
+    	// 5楼机关门
+        core.openDoor('specialDoor', 6, 3, false);
+        core.upload();
+	}
+
 }
 
 core.prototype.getDamage = function (monsterId) {
@@ -894,7 +1052,7 @@ core.prototype.changeFloor = function(floorId, stair, heroLoc) {
         core.playSound('floor', 'mp3');
  		core.mapChangeAnimate('show', function() {
             core.setStatus('floor', core.material.maps[floorId].floor);
-            core.updateStatus();
+            core.updateStatusBar();
  			core.drawMap(floorId, function() {
 				core.hide(core.dom.floorMsgGroup, 10, function() {
 					core.unLockControl();
@@ -1117,7 +1275,7 @@ core.prototype.npcExists = function(x, y) {
 	return false;
 }
 
-core.prototype.terrainExists = function(x, y) {
+core.prototype.terrainExists = function(x, y, id) {
 	if(x > 12 || y > 12 || x < 0 || y < 0) {
 		return true;
 	}
@@ -1128,7 +1286,7 @@ core.prototype.terrainExists = function(x, y) {
 	for(var t = 0;t < blocks.length;t++) {
 		if(blocks[t].x == x && blocks[t].y == y) {
 			for(var map in core.canvas) {
-				if(core.isset(blocks[t][map]) && (blocks[t][map].cls == 'terrains' || (blocks[t][map].cls == 'animates' && core.isset(blocks[t][map].noPass) && blocks[t][map].noPass == true))) {
+				if(core.isset(blocks[t][map]) && (blocks[t][map].cls == 'terrains' || (blocks[t][map].cls == 'animates' && core.isset(blocks[t][map].noPass) && blocks[t][map].noPass == true)) && ((core.isset(id) && core.isset(blocks[t][map].id)) ? blocks[t][map].id == id : true)) {
 					return true;
 				}
 			}
@@ -1349,17 +1507,22 @@ core.prototype.setBoxAnimate = function(speed) {
     clearInterval(core.interval.boxAnimate);
     if (core.temp.boxAnimateObjs.length>0) {
         var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
-    	core.interval.boxAnimate = setInterval(function () {
-			for (var a=0;a<core.temp.boxAnimateObjs.length;a++) {
-				var obj = core.temp.boxAnimateObjs[a];
-				obj.status = obj.status==0?1:0;
-                core.clearMap('ui', obj.bgx, obj.bgy, obj.bgsize, obj.bgsize);
-                core.fillRect('ui', obj.bgx, obj.bgy, obj.bgsize, obj.bgsize, background);
-                core.canvas.ui.drawImage(obj.image, obj.status*32, obj.loc*32,
-					32, 32, obj.x, obj.y, 32, 32);
-            }
-        }, speed);
+        core.drawBoxAnimate(background);
+    	core.interval.boxAnimate = setInterval(function() {
+            core.drawBoxAnimate(background);
+		}, speed);
 	}
+}
+
+core.prototype.drawBoxAnimate = function(background) {
+    for (var a=0;a<core.temp.boxAnimateObjs.length;a++) {
+        var obj = core.temp.boxAnimateObjs[a];
+        obj.status = obj.status==0?1:0;
+        core.clearMap('ui', obj.bgx, obj.bgy, obj.bgsize, obj.bgsize);
+        core.fillRect('ui', obj.bgx, obj.bgy, obj.bgsize, obj.bgsize, background);
+        core.canvas.ui.drawImage(obj.image, obj.status*obj.icon.size, obj.icon.loc*obj.icon.size,
+            obj.icon.size, obj.icon.size, obj.x, obj.y, obj.icon.size, obj.icon.size);
+    }
 }
 
 core.prototype.setHeroLoc = function(itemName, itemVal) {
@@ -1423,21 +1586,34 @@ core.prototype.updateFg = function () {
 /**
  * 物品处理 start
  */
-core.prototype.hasItem = function(itemId) {
+core.prototype.itemCount = function(itemId) {
     var itemCls = core.material.items[itemId].cls;
-    return core.isset(core.temp.itemList[itemCls]) && core.isset(core.temp.itemList[itemCls][itemId]) && core.temp.itemList[itemCls][itemId]>0;
+    return core.isset(core.temp.itemList[itemCls]) && core.isset(core.temp.itemList[itemCls][itemId]) ? core.temp.itemList[itemCls][itemId]:0;
+}
+
+core.prototype.hasItem = function(itemId) {
+	return core.itemCount(itemId)>0;
+}
+
+core.prototype.setItem = function(itemId, itemNum) {
+    var itemCls = core.material.items[itemId].cls;
+    if (itemCls == 'item') return;
+    if(!core.isset(core.temp.itemList[itemCls])) {
+        core.temp.itemList[itemCls] = {};
+    }
+    core.temp.itemList[itemCls][itemId]=itemNum;
 }
 
 core.prototype.useItem = function(itemId) {
 	if (!core.hasItem(itemId)) return;
     var itemCls = core.material.items[itemId].cls;
     core.temp.itemList[itemCls][itemId]--;
-    core.updateStatus();
+    core.updateStatusBar();
 }
 
  core.prototype.addItem = function(itemId, itemNum) {
-     var itemData = core.material.items[itemId];
-     var itemCls = itemData.cls;
+	var itemData = core.material.items[itemId];
+	var itemCls = itemData.cls;
  	if (itemCls == 'item') return;
  	if(!core.isset(core.temp.itemList[itemCls])) {
  		core.temp.itemList[itemCls] = {};
@@ -1523,7 +1699,7 @@ core.prototype.getItem = function(itemId, itemNum, itemX, itemY) {
 	if (itemCls==='item') text += "，" + core.getItemEffectTip(itemId);
 	core.drawTip(text, 'image', core.material.icons.items[itemId]);
     core.canvas.event.clearRect(itemX * 32, itemY * 32, 32, 32);
-    core.updateStatus();
+    core.updateStatusBar();
 }
 
 core.prototype.clearGetItemAnimate = function() {
@@ -1619,36 +1795,200 @@ core.prototype.getItemAnimate = function(itemId, itemNum, itemX, itemY) {
  * 系统机制 start
  */
 
-core.prototype.openBook = function() {
-	if (!core.hasItem('book')) {
-		core.drawTip("你没有怪物手册");
-		return;
-	}
-	if (!core.status.heroStop) {
-		core.drawTip("请先停止勇士行动");
-		return;
-	}
-	if (core.status.currentOpen == 'book') {
-		// close book
-		core.temp.boxAnimateObjs = [];
-		core.setBoxAnimate(core.firstData.animateSpeed);
-		core.clearMap('ui', 0, 0, 416, 416);
-		core.setAlpha('ui', 1.0);
-		core.unLockControl();
-		core.status.currentOpen = null;
-		return;
-	}
-	if (core.status.lockControl) return;
+core.prototype.upload = function() {
 
-	core.lockControl();
+}
+
+core.prototype.showConfirmBox = function(text, yesCallback, noCallback) {
+
+	core.status.currentOpen = 'confirmBox';
+	core.status.currentEvent = {'yes': yesCallback, 'no': noCallback};
+
+    var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
+    core.clearMap('ui', 0, 0, 416, 416);
+    core.setAlpha('ui', 1);
+    core.setFillStyle('ui', background);
+	core.setFont('ui', "bold 19px Verdana");
+	var length = core.canvas.ui.measureText(text).width;
+
+	var left = Math.min(208-40-length/2, 100), top=140, right=416-2*left, bottom=416-2*top;
+
+    core.fillRect('ui', left, top, right, bottom, background);
+    core.strokeRect('ui', left-1, top-1, right+1, bottom+1, '#FFFFFF', 2);
+    core.canvas.ui.textAlign = "center";
+    core.fillText('ui', text, 208, top+50, "#FFFFFF");
+
+    core.fillText('ui', "确定", 208-38, top+105, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "取消", 208+38, top+105);
+
+}
+
+core.prototype.checkStatus = function(name, need, item) {
+    if (need && core.status.currentOpen == name) {
+        core.closePanel();
+        return false;
+    }
+
+    if (need && core.status.lockControl) return false;
+	if (core.isset(item) && item && !core.hasItem(name)) {
+        core.drawTip("你没有"+core.material.items[name].name);
+        return false;
+	}
+    if (!core.status.heroStop) {
+        core.drawTip("请先停止勇士行动");
+        return false;
+    }
+
+    core.lockControl();
     core.temp.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
-	core.status.currentOpen = 'book';
+    core.status.currentOpen = name;
+    return true;
+}
 
-    // console.log(enemys);
+core.prototype.openBook = function(need) {
+	if (!core.checkStatus('book', need, true))
+		return;
 
-    // showEnemyBook
 	core.drawEnemyBook(1);
+}
 
+core.prototype.useFly = function (need) {
+    if (!core.checkStatus('fly', need, true))
+        return;
+}
+
+core.prototype.openToolbox = function(need) {
+    if (!core.checkStatus('toolbox', need))
+        return;
+}
+
+core.prototype.save = function(need) {
+    if (!core.checkStatus('save', need))
+        return;
+}
+
+core.prototype.load = function(need) {
+    if (!core.checkStatus('load', need))
+        return;
+}
+
+core.prototype.openSettings = function(need) {
+    if (!core.checkStatus('settings', need))
+        return;
+
+    var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
+    core.clearMap('ui', 0, 0, 416, 416);
+    core.setAlpha('ui', 1);
+    core.setFillStyle('ui', background);
+    var left=97, top=64, right=416-2*left, bottom=416-2*top;
+    core.fillRect('ui', left, top, right, bottom, background);
+    core.strokeRect('ui', left-1, top-1, right+1, bottom+1, '#FFFFFF', 2);
+
+    // 名称
+    core.canvas.ui.textAlign = "center";
+    core.fillText('ui', "音乐： "+(core.status.soundStatus?"[ON]":"[OFF]"), 208, top+56, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "快捷商店", 208, top+88, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "保存游戏", 208, top+120, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "读取游戏", 208, top+152, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "我要咸鱼", 208, top+184, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "重新开始", 208, top+216, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "返回游戏", 208, top+248, "#FFFFFF", "bold 17px Verdana");
+
+
+}
+
+core.prototype.selectShop = function() {
+
+    core.status.currentOpen = 'selectShop';
+    var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
+    core.clearMap('ui', 0, 0, 416, 416);
+    core.setAlpha('ui', 1);
+    core.setFillStyle('ui', background);
+
+    var shopList = core.status.shops, keys=Object.keys(shopList);
+    var len=keys.length+1; if (len%2==0) len++;
+
+    var left=97, top=208-32-16*len, right=416-2*left, bottom=416-2*top;
+    core.fillRect('ui', left, top, right, bottom, background);
+    core.strokeRect('ui', left-1, top-1, right+1, bottom+1, '#FFFFFF', 2);
+
+    core.canvas.ui.textAlign = "center";
+    for (var i=0;i<keys.length;i++) {
+        core.fillText('ui', shopList[keys[i]].name, 208, top+56+32*i, "#FFFFFF", "bold 17px Verdana");
+	}
+
+	core.fillText('ui', "返回游戏", 208, top+bottom-40);
+
+}
+
+core.prototype.openShop = function(id) {
+	var shop = core.status.shops[id];
+	// 正在移动中...
+	if (!core.status.heroStop) {
+		setTimeout(function() {
+			core.openShop(id);
+		}, 30);
+		return;
+	}
+	core.status.currentEvent = shop;
+    core.status.currentOpen = 'shop';
+    core.lockControl();
+    shop.visited = true;
+
+    var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
+
+    var times=shop.times, need = eval(shop.need);
+
+    clearInterval(core.interval.getItemTipAnimate);
+    core.clearMap('data', 0, 0, 416, 416);
+    core.setOpacity('data', 1);
+
+    core.clearMap('ui', 0, 0, 416, 416);
+    core.setAlpha('ui', 1);
+    core.setFillStyle('ui', background);
+
+    var left=97, top=64, right=416-2*left, bottom=416-2*top;
+    core.fillRect('ui', left, top, right, bottom, background);
+    core.strokeRect('ui', left-1, top-1, right+1, bottom+1, '#FFFFFF', 2);
+
+    // 名称
+    core.canvas.ui.textAlign = "center";
+	core.fillText('ui', shop.title, left+135, top+34, '#FFFFFF', 'bold 19px Verdana');
+
+	// 动画
+    core.strokeRect('ui', left+15-1, top+30-1, 34, 34, '#DDDDDD', 2);
+    core.temp.boxAnimateObjs = [];
+    core.temp.boxAnimateObjs.push({
+        'bgx': left+15, 'bgy': top+30, 'bgsize': 32,
+        'image': core.material.images['32'].npcs,
+        'x': left+15, 'y': top+30, 'icon': core.material.icons.npcs[shop.icon]
+    });
+    core.setBoxAnimate(core.firstData.animateSpeed);
+
+	// 对话
+    core.canvas.ui.textAlign = "left";
+    core.fillText('ui', "勇敢的武士啊，给我"+need, left+60, top+65, '#FFFFFF', 'bold 14px Verdana');
+    core.fillText('ui', "金币你就可以：", left+60, top+83);
+
+    // 选项
+    core.canvas.ui.textAlign = "center";
+    for (var i=0;i<shop.choices.length;i++) {
+    	var choice = shop.choices[i];
+    	core.fillText('ui', choice.text, 208, top+120+32*i, "#FFFFFF", "bold 17px Verdana");
+	}
+	core.fillText('ui', "退出商店", 208, top+248);
+
+}
+
+core.prototype.closePanel = function() {
+    core.temp.boxAnimateObjs = [];
+    core.setBoxAnimate(core.firstData.animateSpeed);
+    core.clearMap('ui', 0, 0, 416, 416);
+    core.setAlpha('ui', 1.0);
+    core.clearMap('data', 0, 0, 416, 416);
+    core.unLockControl();
+    core.status.currentEvent = null;
+    core.status.currentOpen = null;
 }
 
 core.prototype.getCurrentEnemys = function() {
@@ -1685,11 +2025,13 @@ core.prototype.getCurrentEnemys = function() {
 core.prototype.drawEnemyBook = function (page) {
 
 	var enemys = core.getCurrentEnemys();
-
     var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
 
-	core.clearMap('ui', 0, 0, 416, 416);
+    clearInterval(core.interval.getItemTipAnimate);
+    core.clearMap('data', 0, 0, 416, 416);
+    core.setOpacity('data', 1);
 
+	core.clearMap('ui', 0, 0, 416, 416);
     core.setAlpha('ui', 1);
     core.setFillStyle('ui', background);
     core.fillRect('ui', 0, 0, 416, 416);
@@ -1711,12 +2053,16 @@ core.prototype.drawEnemyBook = function (page) {
 	var totalPage = parseInt((enemys.length-1)/perpage)+1;
 	if (page<1) page=1;
 	if (page>totalPage) page=totalPage;
-	core.status.currentPage = page;
+	core.status.currentEvent = page;
 	var start = (page-1)*perpage, end = Math.min(page*perpage, enemys.length);
 
 	enemys = enemys.slice(start, end);
     core.temp.boxAnimateObjs = [];
-
+/*
+    var alpha=core.canvas.data.globalAlpha;
+    var font=core.canvas.data.font;
+    var style=core.canvas.data.fillStyle;
+*/
     for (var i = 0; i < enemys.length; i++) {
 		// 边框
         //core.setStokeStyle('ui', '#FFFFFF');
@@ -1727,20 +2073,22 @@ core.prototype.drawEnemyBook = function (page) {
         // 怪物
 		core.temp.boxAnimateObjs.push({
 			'bgx': 22, 'bgy': 62*i+22, 'bgsize': 42,
-			'image': core.material.images['32'].enemys, 'loc': core.material.icons.enemys[enemy.id].loc,
-			'x': 27, 'y': 62*i+27
+			'image': core.material.images['32'].enemys,
+			'x': 27, 'y': 62*i+27, 'icon': core.material.icons.enemys[enemy.id]
 		});
 
 		// 数据
-        core.fillText('ui', enemy.name, 82, 62*i+47, '#DDDDDD', 'bold 17px Verdana');
-		core.fillText('ui', '生命', 170, 62*i+35, '#DDDDDD', '13px Verdana');
-		core.fillText('ui', enemy.hp, 200, 62*i+35, '#DDDDDD', 'bold 13px Verdana');
-        core.fillText('ui', '攻击', 260, 62*i+35, '#DDDDDD', '13px Verdana');
-        core.fillText('ui', enemy.atk, 290, 62*i+35, '#DDDDDD', 'bold 13px Verdana');
-        core.fillText('ui', '防御', 340, 62*i+35, '#DDDDDD', '13px Verdana');
-        core.fillText('ui', enemy.def, 370, 62*i+35, '#DDDDDD', 'bold 13px Verdana');
-        core.fillText('ui', '金币', 170, 62*i+53, '#DDDDDD', '13px Verdana');
-        core.fillText('ui', enemy.money, 200, 62*i+53, '#DDDDDD', 'bold 13px Verdana');
+		core.canvas.ui.textAlign = "center";
+        core.fillText('ui', enemy.name, 115, 62*i+47, '#DDDDDD', 'bold 17px Verdana');
+        core.canvas.ui.textAlign = "left";
+		core.fillText('ui', '生命', 165, 62*i+35, '#DDDDDD', '13px Verdana');
+		core.fillText('ui', enemy.hp, 195, 62*i+35, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '攻击', 255, 62*i+35, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.atk, 285, 62*i+35, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '防御', 335, 62*i+35, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.def, 365, 62*i+35, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '金币', 165, 62*i+53, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.money, 195, 62*i+53, '#DDDDDD', 'bold 13px Verdana');
 
         var damage=enemy.damage;
         var color='#FFFF00';
@@ -1748,18 +2096,32 @@ core.prototype.drawEnemyBook = function (page) {
         if (damage==0) color='#00FF00';
         if (damage==999999999) damage='无法战斗';
         var length=core.canvas.ui.measureText(damage).width;
-        core.fillText('ui', damage, 330-length/2, 62*i+53, color, 'bold 13px Verdana');
+        core.fillText('ui', damage, 326-length/2, 62*i+53, color, 'bold 13px Verdana');
 
-        core.fillText('ui', '临界', 170, 62*i+71, '#DDDDDD', '13px Verdana');
-        core.fillText('ui', enemy.critical, 200, 62*i+71, '#DDDDDD', 'bold 13px Verdana');
-        core.fillText('ui', '减伤', 260, 62*i+71, '#DDDDDD', '13px Verdana');
-        core.fillText('ui', enemy.criticalDamage, 290, 62*i+71, '#DDDDDD', 'bold 13px Verdana');
-        core.fillText('ui', '1防', 340, 62*i+71, '#DDDDDD', '13px Verdana');
-        core.fillText('ui', enemy.defDamage, 370, 62*i+71, '#DDDDDD', 'bold 13px Verdana');
+        // 属性
+		if (enemy.special!='') {
+			core.setFont('data', 'bold 12px Verdana');
+			var length = core.canvas.data.measureText(enemy.special).width;
+			core.setAlpha('data', '0.4');
+			core.fillRect('data', 64-4-length, 62*i+46, length+4, 17, '#000000');
+			core.setAlpha('data', '1');
+			core.fillText('data', enemy.special, 64-2-length, 62*i+59, '#FF6A6A', 'bold 12px Verdana')
+		}
+
+        core.fillText('ui', '临界', 165, 62*i+71, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.critical, 195, 62*i+71, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '减伤', 255, 62*i+71, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.criticalDamage, 285, 62*i+71, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '1防', 335, 62*i+71, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.defDamage, 365, 62*i+71, '#DDDDDD', 'bold 13px Verdana');
 
     }
-
-    core.setBoxAnimate(core.firstData.speed);
+/*
+    core.setAlpha('data', alpha);
+    core.setFont('data', font);
+    core.setFillStyle('data', style);
+*/
+    core.setBoxAnimate(core.firstData.animateSpeed);
     core.drawPagination(page,totalPage);
 
 }
@@ -1772,10 +2134,10 @@ core.prototype.drawPagination = function(page, totalPage) {
     var textLength = core.canvas.ui.measureText("上一页").width;
     var length = core.canvas.ui.measureText(page+" / "+page).width;
 
-    if (page!=1)
+    if (page>1)
 	    core.fillText('ui', '上一页', 208-60-textLength, 403);
     core.fillText('ui', page + " / " + totalPage, (416-length)/2, 403);
-    if (page!=totalPage)
+    if (page<totalPage)
 	    core.fillText('ui', '下一页', 208+60, 403);
 
 }
@@ -1785,8 +2147,7 @@ core.prototype.setFirstItem = function() {
 	core.setStatus('hp', core.firstData.heroHp);
 	core.setStatus('atk', core.firstData.heroAtk);
 	core.setStatus('def', core.firstData.heroDef);
-	core.setStatus('gold', core.firstData.heroGold);
-	core.setStatus('exp', core.firstData.heroExp);
+	core.setStatus('money', core.firstData.heroMoney);
 	for(var itemClass in core.firstData.heroItem) {
 		if(!core.isset(core.temp.itemList[itemClass])) {
 			core.temp.itemList[itemClass] = {};
@@ -1811,8 +2172,8 @@ core.prototype.getStatus = function(statusName) {
 	}
 }
 
-core.prototype.updateStatus = function() {
-	var statusList = ['floor', 'hp', 'atk', 'def', 'mdef', 'gold'];
+core.prototype.updateStatusBar = function() {
+	var statusList = ['floor', 'hp', 'atk', 'def', 'mdef', 'money'];
 	statusList.forEach(function (item) {
         core.statusBar[item].innerHTML = core.getStatus(item);
 	});
@@ -1892,9 +2253,11 @@ core.prototype.playSound = function(soundName, soundType) {
 	if(!core.status.soundStatus) {
 		return;
 	}
+	/*
 	if (core.isset(core.temp.playedSound)) {
-		core.temp.playedSound.pause();
+		// core.temp.playedSound.pause();
 	}
+	*/
 	core.temp.playedSound = core.material.sounds[soundType][soundName];
 	core.temp.playedSound.play();
 }
@@ -1920,13 +2283,11 @@ core.prototype.changeSoundStatus = function() {
 }
 
 core.prototype.enabledSound = function() {
-	core.dom.musicBtn.src = core.material.images['25'].musicPlayed.src;
 	core.temp.playedBgm.play();
 	core.status.soundStatus = true;
 }
 
 core.prototype.disabledSound = function() {
-	core.dom.musicBtn.src = core.material.images['25'].musicPaused.src;
 	core.temp.playedBgm.pause();
 	core.status.soundStatus = false;
 }
@@ -2043,13 +2404,13 @@ core.prototype.resize = function(width, height) {
         core.statusBar.image.mdef.style.left = 8*scale + "px";
         core.statusBar.mdef.style.top = 52*scale + "px";
         core.statusBar.mdef.style.left = 48*scale + "px";
-        // gold
-        core.statusBar.image.gold.style.width = 32*scale + "px";
-        core.statusBar.image.gold.style.height = 32*scale + "px";
-        core.statusBar.image.gold.style.top = 44*scale + "px";
-        core.statusBar.image.gold.style.left = 138*scale + "px";
-        core.statusBar.gold.style.top = 52*scale + "px";
-        core.statusBar.gold.style.left = 178*scale + "px";
+        // money
+        core.statusBar.image.money.style.width = 32*scale + "px";
+        core.statusBar.image.money.style.height = 32*scale + "px";
+        core.statusBar.image.money.style.top = 44*scale + "px";
+        core.statusBar.image.money.style.left = 138*scale + "px";
+        core.statusBar.money.style.top = 52*scale + "px";
+        core.statusBar.money.style.left = 178*scale + "px";
         // keys
         core.statusBar.yellowKey.style.top = 52*scale + "px";
         core.statusBar.yellowKey.style.left = 268*scale + "px";
@@ -2154,13 +2515,13 @@ core.prototype.resize = function(width, height) {
         core.statusBar.image.mdef.style.left = "8px";
         core.statusBar.mdef.style.top = "52px";
         core.statusBar.mdef.style.left = "48px";
-        // gold
-        core.statusBar.image.gold.style.width = "32px";
-        core.statusBar.image.gold.style.height = "32px";
-        core.statusBar.image.gold.style.top = "44px";
-        core.statusBar.image.gold.style.left = "138px";
-        core.statusBar.gold.style.top = "52px";
-        core.statusBar.gold.style.left = "178px";
+        // money
+        core.statusBar.image.money.style.width = "32px";
+        core.statusBar.image.money.style.height = "32px";
+        core.statusBar.image.money.style.top = "44px";
+        core.statusBar.image.money.style.left = "138px";
+        core.statusBar.money.style.top = "52px";
+        core.statusBar.money.style.left = "178px";
         // keys
         core.statusBar.yellowKey.style.top = "52px";
         core.statusBar.yellowKey.style.left = "268px";
@@ -2265,13 +2626,13 @@ core.prototype.resize = function(width, height) {
         core.statusBar.image.mdef.style.left = "8px";
         core.statusBar.mdef.style.top = "188px";
         core.statusBar.mdef.style.left = "50px";
-        // gold
-        core.statusBar.image.gold.style.width = "32px";
-        core.statusBar.image.gold.style.height = "32px";
-        core.statusBar.image.gold.style.top = "220px";
-        core.statusBar.image.gold.style.left = "8px";
-        core.statusBar.gold.style.top = "228px";
-        core.statusBar.gold.style.left = "50px";
+        // money
+        core.statusBar.image.money.style.width = "32px";
+        core.statusBar.image.money.style.height = "32px";
+        core.statusBar.image.money.style.top = "220px";
+        core.statusBar.image.money.style.left = "8px";
+        core.statusBar.money.style.top = "228px";
+        core.statusBar.money.style.left = "50px";
         // keys
 		core.statusBar.yellowKey.style.top = "268px";
 		core.statusBar.yellowKey.style.left = "8px";

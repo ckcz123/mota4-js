@@ -29,6 +29,11 @@ events.prototype.init = function() {
 		},
 		'visitNpc': function (data, core, callback) {
 
+		},
+		'openShop': function (data, core, callback) {
+			core.openShop(data.event.shopid);
+            if (core.isset(callback))
+                callback();
 		}
 	}
 }

@@ -144,18 +144,18 @@ maps.prototype.init = function() {
                 if (id==33) tmp.event = {'cls': 'items', 'id': 'fly', 'trigger': 'getItem'}; // 楼层传送器
 
 				// 51-80 NPC
-				if (id==51) tmp.event = {'cls': 'npcs', 'id': 'oldPaPa', 'animate': 2, 'noPass': true, 'trigger': 'visitNpc', 'data': {'times': 0}};
+				if (id==51) tmp.event = {'cls': 'npcs', 'id': 'wood', 'animate': 2, 'noPass': true, 'trigger': 'visitNpc', 'data': {'times': 0}};
 
-				if (id==71) tmp.event = {'cls': 'npcs', 'id': 'store1', 'animate': 2, 'noPass': true, 'trigger': 'visitNpc', 'data': {'times': 0}};
-                if (id==72) tmp.event = {'cls': 'npcs', 'id': 'store1', 'animate': 2, 'noPass': true, 'trigger': 'visitNpc', 'data': {'times': 0}};
+				if (id==71) tmp.event = {'cls': 'npcs', 'id': 'shop1', 'animate': 2, 'noPass': true, 'trigger': 'openShop', 'shopid': 'shop1'};
+                if (id==72) tmp.event = {'cls': 'npcs', 'id': 'shop1', 'animate': 2, 'noPass': true, 'trigger': 'openShop', 'shopid': 'shop2'};
 
 				// 81-100 门
 				if (id==81) tmp.event = {'cls': 'terrains', 'id': 'yellowDoor', 'noPass': true, 'trigger': 'openDoor'};
                 if (id==82) tmp.event = {'cls': 'terrains', 'id': 'blueDoor', 'noPass': true, 'trigger': 'openDoor'};
                 if (id==83) tmp.event = {'cls': 'terrains', 'id': 'redDoor', 'noPass': true, 'trigger': 'openDoor'};
                 if (id==84) tmp.event = {'cls': 'terrains', 'id': 'specialDoor', 'noPass': true, 'trigger': 'openDoor'};
-                if (id==85) tmp.event = {'cls': 'terrains', 'id': 'store1-left', 'noPass':true}; // 商店左
-                if (id==86) tmp.event = {'cls': 'terrains', 'id': 'store1-right', 'noPass':true}; // 商店左
+                if (id==85) tmp.event = {'cls': 'terrains', 'id': 'shop1-left', 'noPass':true}; // 商店左
+                if (id==86) tmp.event = {'cls': 'terrains', 'id': 'shop1-right', 'noPass':true}; // 商店左
                 if (id==87) tmp.event = {'cls': 'terrains', 'id': 'upFloor', 'trigger': 'changeFloor',
                     			'data': {'floorId': 'MT'+(f+1), 'stair': 'downFloor'}
                         	}; // 上楼梯
@@ -215,176 +215,6 @@ maps.prototype.init = function() {
 		content['blocks'] = blocks;
 		this.maps[floorname] = content;
 	}
-
-/*
-	this.maps = {
-		'MT001': {
-			'title': '魔塔1层',
-			'blocks': [
-				{
-					'x': 0, 
-					'y': 0,
-					'fg': {'cls': 'animates', 'id': 'lava', 'animate': 4, 'noPass': true}
-				},
-				{
-					'x': 1, 
-					'y': 0,
-					'event': {'cls': 'enemys', 'id': 'skullCaptain', 'trigger': 'battle', 'animate': 2, 'noPass': true}
-				},
-				{
-					'x': 2, 
-					'y': 0,
-					'event': {'cls': 'npcs', 'id': 'oldPaPa', 'animate': 2, 'noPass': true}
-				},
-				{
-					'x': 3, 
-					'y': 0,
-					'event': {'cls': 'enemys', 'id': 'steelSkull', 'trigger': 'battle', 'animate': 2, 'noPass': true}
-				},
-				{
-					'x': 3, 
-					'y': 3,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 4, 
-					'y': 3,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 6, 
-					'y': 3,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 7, 
-					'y': 3,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 8, 
-					'y': 3,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 8, 
-					'y': 4,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 8, 
-					'y': 5,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 8, 
-					'y': 6,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 8, 
-					'y': 7,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 8, 
-					'y': 8,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 7, 
-					'y': 8,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 6, 
-					'y': 8,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 5, 
-					'y': 8,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 4, 
-					'y': 8,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 3, 
-					'y': 8,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 3, 
-					'y': 7,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 3, 
-					'y': 5,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 3, 
-					'y': 4,
-					'event': {'cls': 'terrains', 'id': 'yellowWall', 'noPass': true}
-				},
-				{
-					'x': 7,
-					'y': 7,
-					'event': {'cls': 'terrains', 'id': 'upFloor', 'trigger': 'changeFloor', 'data': {'floorId': 'MT002', 'heroLoc': {'direction': 'down', 'x': 7, 'y': 7}}}
-				},
-				{
-					'x': 1,
-					'y': 6,
-					'event': {'cls': 'items', 'id': 'yellowKey', 'trigger': 'getItem'}
-				},
-                {
-                    'x': 1,
-                    'y': 10,
-                    'event': {'cls': 'items', 'id': 'book', 'trigger': 'getItem'}
-                }
-			]
-		},
-		'MT002': {
-			'title': '魔塔2层',
-			'blocks': [
-				{
-					'x': 7,
-					'y': 7,
-					'event': {'cls': 'terrains', 'id': 'downFloor', 'trigger': 'changeFloor', 'data': {'floorId': 'MT001', 'heroLoc': {'direction': 'down', 'x': 7, 'y': 7}}}
-				},
-				{
-					'x': 5,
-					'y': 5,
-					'event': {'cls': 'items', 'id': 'yellowKey', 'trigger': 'getItem'}
-				},
-				{
-					'x': 4,
-					'y': 5,
-					'event': {'cls': 'items', 'id': 'yellowKey', 'trigger': 'getItem'}
-				},
-				{
-					'x': 3,
-					'y': 5,
-					'event': {'cls': 'items', 'id': 'blueKey', 'trigger': 'getItem'}
-				},
-				{
-					'x': 2,
-					'y': 5,
-					'event': {'cls': 'items', 'id': 'redKey', 'trigger': 'getItem'}
-				},
-				{
-					'x': 7,
-					'y': 6,
-					'event': {'cls': 'items', 'id': 'greenKey', 'trigger': 'getItem'}
-				}
-			]
-		}
-	};
-	*/
 }
 
 maps.prototype.getMaps = function(mapName) {

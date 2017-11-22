@@ -49,7 +49,7 @@ function main() {
             'atk': document.getElementById("img-atk"),
             'def': document.getElementById("img-def"),
             'mdef': document.getElementById("img-mdef"),
-            'gold': document.getElementById("img-gold"),
+            'money': document.getElementById("img-money"),
             'book': document.getElementById("img-book"),
             'fly': document.getElementById("img-fly"),
             'toolbox': document.getElementById("img-toolbox"),
@@ -62,7 +62,7 @@ function main() {
 		'atk': document.getElementById('atk'),
         'def': document.getElementById("def"),
         'mdef': document.getElementById("mdef"),
-        'gold': document.getElementById("gold"),
+        'money': document.getElementById("money"),
         'yellowKey': document.getElementById("yellowKey"),
         'blueKey': document.getElementById("blueKey"),
         'redKey': document.getElementById("redKey"),
@@ -81,7 +81,7 @@ function main() {
 		'heroHp': 1000,
 		'heroAtk': 10,
 		'heroDef': 10,
-		'heroGold': 0,
+		'heroMoney': 0,
 		'heroHard': 0,
 		'heroItem': {
 			'key': {
@@ -90,6 +90,27 @@ function main() {
 				'redKey': 0,
 				'greenKey': 0
 			}
+		},
+		'shops': {
+			'shop1': {
+				'id': 'shop1', 'title': '贪婪之神', 'name': '3楼商店', 'icon': 'shop1',
+				'times': 0, 'need': "20+2*times", 'visited': false,
+				'choices': [
+					{'text': '攻击+2', 'effect': 'atk+=2'},
+					{'text': '防御+2', 'effect': 'def+=2'},
+					{'text': '魔防+5', 'effect': 'mdef+=5'}
+				]
+			},
+
+			'shop2': {
+				'id': 'shop2', 'title': '贪婪之神', 'name': '12楼商店', 'icon': 'shop1',
+				'times': 0, 'need': '40+4*times', 'visited': false,
+				'choices': [
+                    {'text': '攻击+4', 'effect': 'atk+=4'},
+                    {'text': '防御+4', 'effect': 'def+=4'},
+                    {'text': '魔防+10', 'effect': 'mdef+=4'}
+				]
+			},
 		},
 		'animateSpeed': 500
 	}
@@ -180,13 +201,6 @@ main.dom.body.onkeyup = function(e) {
 }
 */
 
-main.dom.musicBtn.onclick = function() {
-	if(main.core.status.lockControl) {
-		return;
-	}
-	main.core.musicBtnClick();
-}
-
 main.dom.body.onselectstart = function() {
     return false;
 }
@@ -207,26 +221,25 @@ main.dom.data.ontouchstart = function(e) {
 }
 
 main.statusBar.image.book.onclick = function() {
-	main.core.openBook();
-}
-/*
-main.dom.statusBar.image.fly.onclick = function(e) {
-    main.core.useFly();
+	main.core.openBook(true);
 }
 
-main.dom.statusBar.image.toolbox.onclick = function(e) {
-    main.core.openToolbox();
+main.statusBar.image.fly.onclick = function(e) {
+    main.core.useFly(true);
 }
 
-main.dom.statusBar.image.save.onclick = function(e) {
-    main.core.save();
+main.statusBar.image.toolbox.onclick = function(e) {
+    main.core.openToolbox(true);
 }
 
-main.dom.statusBar.image.load.onclick = function(e) {
-    main.core.load();
+main.statusBar.image.save.onclick = function(e) {
+    main.core.save(true);
 }
 
-main.dom.statusBar.image.settings.onclick = function(e) {
-    main.core.openSettings();
+main.statusBar.image.load.onclick = function(e) {
+    main.core.load(true);
 }
-*/
+
+main.statusBar.image.settings.onclick = function(e) {
+    main.core.openSettings(true);
+}

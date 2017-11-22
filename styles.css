@@ -27,14 +27,6 @@ html,body {
 	z-index: 12;
 }
 
-#musicBtn {
-	position: fixed;
-	bottom: 10px;
-	left: 10px;
-	cursor: pointer;
-	z-index: 12;
-}
-
 #startPanel {
 	width: 100%;
 	height: 100%;

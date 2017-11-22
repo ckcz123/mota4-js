@@ -25,8 +25,8 @@ icons.prototype.init = function() {
 			'downFloor': {'loc': 6, 'size': 32},
 			'upFloor': {'loc': 7, 'size': 32},
 			'cavity': {'loc': 8, 'size': 32},
-			'store1-left': {'loc': 9, 'size': 32},
-			'store1-right': {'loc': 10, 'size': 32},
+			'shop1-left': {'loc': 9, 'size': 32},
+			'shop1-right': {'loc': 10, 'size': 32},
 			'yellowDoor': {'loc': 11, 'size': 32},
 			'blueDoor': {'loc': 12, 'size': 32},
 			'redDoor': {'loc': 13, 'size': 32},
@@ -40,7 +40,7 @@ icons.prototype.init = function() {
 			'blueDoor': {'loc': 4, 'size': 32},
 			'redDoor': {'loc': 5, 'size': 32},
 			'greenDoor': {'loc': 6, 'size': 32},
-			'flowerDoor': {'loc': 7, 'size': 32},
+			'specialDoor': {'loc': 7, 'size': 32},
 			'blueWallDoor': {'loc': 8, 'size': 32},
 			'yellowWallDoor': {'loc': 9, 'size': 32},
 			'whiteWallDoor': {'loc': 10, 'size': 32},
@@ -54,13 +54,15 @@ icons.prototype.init = function() {
 			'iceYellowWallDoor': {'loc': 18, 'size': 32}
 		},
 		'npcs': {
-			'oldPaPa': {'loc': 0, 'size': 32},
-			'chapman': {'loc': 1, 'size': 32},
+			'man': {'loc': 0, 'size': 32},
+			'woman': {'loc': 1, 'size': 32},
 			'thief': {'loc': 2, 'size': 32},
-			'faerie': {'loc': 3, 'size': 32},
+			'fairy': {'loc': 3, 'size': 32},
 			'magician': {'loc': 4, 'size': 32},
-			'store1': {'loc': 10, 'size': 32},
-			// 'store2': {'loc': 10, 'size': }
+            'wood': {'loc': 8, 'size': 32},
+			'shop1': {'loc': 10, 'size': 32},
+			'shop2': {'loc': 9, 'size': 32},
+            'princess': {'loc': 11, 'size': 32}
 		},
         'enemys': {
             'greenSlime': {'loc': 0, 'size': 32},

@@ -10,7 +10,7 @@ items.prototype.init = function() {
 		'redKey': {'cls': 'key', 'name': '红钥匙'},
 		'greenKey': {'cls': 'key', 'name': '绿钥匙'},
 		// 宝石、血瓶
-        'redJewel': {'cls': 'item', 'name': '红宝石', 'effect': 'atk+'},
+        'redJewel': {'cls': 'item', 'name': '红宝石'},
 		'blueJewel': {'cls': 'item', 'name': '蓝宝石'},
 		'greenJewel': {'cls': 'item', 'name': '绿宝石'},
 		'yellowJewel': {'cls': 'item', 'name': '黄宝石'},
