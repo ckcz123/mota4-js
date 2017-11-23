@@ -70,6 +70,7 @@ function core() {
     }
     this.temp = {
         'itemList': [],
+        'floorId': null,
         'thisMap': null,
         'playedSound': null,
         'playedBgm': null,
@@ -317,7 +318,7 @@ core.prototype.keyUp = function(e) {
 */
 
 core.prototype.onclick = function (x, y) {
-    console.log("Click: (" + x + "," + y + ")");
+    // console.log("Click: (" + x + "," + y + ")");
 
     // 寻路
     if (!core.status.lockControl) {
@@ -340,8 +341,16 @@ core.prototype.onclick = function (x, y) {
 
     // 楼层飞行器
     if (core.status.event.id == 'fly') {
-
-
+        if ((x==10 || x==11) && y==5) core.drawFly(core.status.event.data-1);
+        if ((x==10 || x==11) && y==9) core.drawFly(core.status.event.data+1);
+        if (x>=5 && x<=7 && y==12) core.closePanel();
+        if (x>=0 && x<=9 && y>=3 && y<=11) {
+            var index=core.status.flyRange.indexOf(core.temp.floorId);
+            var stair=core.status.event.data<index?"upFloor":"downFloor";
+            var floorId=core.status.event.data;
+            core.closePanel();
+            core.changeFloor(core.status.flyRange[floorId], stair);
+        }
         return;
     }
 
@@ -377,7 +386,7 @@ core.prototype.onclick = function (x, y) {
             }
             if (y == 8) {
                 core.showConfirmBox("你确定要重新开始吗？", function () {
-                    console.log("重新开始游戏...");
+                    core.drawTip("重新开始游戏");
                     core.closePanel();
                 }, function () {
                     core.openSettings(false);
@@ -386,8 +395,6 @@ core.prototype.onclick = function (x, y) {
             if (y == 9) core.closePanel();
             return;
         }
-
-
     }
 
     // 商店
@@ -1087,6 +1094,10 @@ core.prototype.changeFloor = function (floorId, stair, heroLoc) {
                 heroLoc.y = blocks[i].y;
             }
         }
+        if (core.material.maps[floorId].canFlyTo && core.status.flyRange.indexOf(floorId)<0) {
+            if (stair=='upFloor') core.status.flyRange.unshift(floorId);
+            if (stair=='downFloor') core.status.flyRange.push(floorId);
+        }
     }
 
     window.setTimeout(function () {
@@ -1241,6 +1252,7 @@ core.prototype.setFillStyle = function (map, style) {
 core.prototype.drawMap = function (mapName, callback) {
     var mapData = core.material.maps[mapName];
     var mapBlocks = mapData.blocks;
+    core.temp.floorId = mapName;
     core.temp.thisMap = mapData;
     var x, y, blockIcon, blockImage;
     core.clearMap('all');
@@ -1849,6 +1861,10 @@ core.prototype.getItemAnimate = function(itemId, itemNum, itemX, itemY) {
  * 物品处理 end
  */
 
+core.prototype.visitNpc = function (npcevent) {
+    core.drawTip("NPC对话事件尚未完成");
+}
+
 /**
  * 系统机制 start
  */
@@ -1914,22 +1930,41 @@ core.prototype.useFly = function (need) {
     if (!core.checkStatus('fly', need, true))
         return;
 
-    core.drawFly(core.status.hero.floor);
+    var index=core.status.flyRange.indexOf(core.temp.floorId);
+    if (index<0) {
+        core.drawTip("楼层传送器好像失效了");
+        core.unLockControl();
+        core.status.event.data = null;
+        core.status.event.id = null;
+        return;
+    }
+
+    core.drawFly(index);
 }
 
 core.prototype.openToolbox = function (need) {
+    /*
     if (!core.checkStatus('toolbox', need))
         return;
+        */
+    core.drawTip("工具箱还未完成");
 }
 
 core.prototype.save = function (need) {
+    /*
     if (!core.checkStatus('save', need))
         return;
+        */
+    core.drawTip("存档功能还未完成");
 }
 
 core.prototype.load = function (need) {
+    /*
     if (!core.checkStatus('load', need))
         return;
+        */
+
+    core.drawTip("读档功能还未完成");
 }
 
 core.prototype.openSettings = function (need) {
@@ -2191,15 +2226,51 @@ core.prototype.drawPagination = function (page, totalPage) {
 }
 
 core.prototype.drawFly = function(page) {
-    var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
+
+    if (page<0) page=0;
+    if (page>=core.status.flyRange.length) page=core.status.flyRange.length-1;
+    core.status.event.data = page;
+
+    var floorId = core.status.flyRange[page];
+    var title = core.material.maps[floorId].title;
 
     core.clearMap('ui', 0, 0, 416, 416);
+    core.setAlpha('ui', 0.7);
+    core.fillRect('ui', 0, 0, 416, 416, '#000000');
     core.setAlpha('ui', 1);
-    core.setFillStyle('ui', background);
-    core.fillRect('ui', 0, 0, 416, 416);
+    core.canvas.ui.textAlign = 'center';
+    core.fillText('ui', '楼层跳跃', 208, 60, '#FFFFFF', "bold 28px Verdana");
+    core.fillText('ui', '返回游戏', 208, 403, '#FFFFFF', "bold 15px Verdana")
+    core.fillText('ui', title, 356, 247, '#FFFFFF', "bold 19px Verdana");
+    if (page>0)
+        core.fillText('ui', '▲', 356, 247-64, '#FFFFFF', "17px Verdana");
+    if (page<core.status.flyRange.length-1)
+        core.fillText('ui', '▼', 356, 247+64, '#FFFFFF', "17px Verdana");
+    core.strokeRect('ui', 20, 100, 273, 273, '#FFFFFF', 2);
+    core.drawThumbnail('ui', floorId, 20, 100, 273);
+}
 
-
-
+core.prototype.drawThumbnail = function(canvas, floorId, x, y, size) {
+    core.clearMap(canvas, x, y, size, size);
+    var blocks = core.material.maps[floorId].blocks;
+    var persize = size/13;
+    for (var i=0;i<13;i++) {
+        for (var j=0;j<13;j++) {
+            var blockIcon = core.material.icons.terrains.blackFloor;
+            var blockImage = core.material.images.terrains;
+            core.canvas[canvas].drawImage(blockImage, 0, blockIcon.loc * blockIcon.size, blockIcon.size, blockIcon.size, x + i * persize, y + j * persize, persize, persize);
+        }
+    }
+    for (var b in blocks) {
+        var block = blocks[b];
+        if (core.isset(block.event)) {
+            var i = block.x, j = block.y;
+            var blockIcon = core.material.icons[block.event.cls][block.event.id];
+            var blockImage = core.material.images[block.event.cls];
+            //core.canvas[canvas].clearRect(x + i * persize, y + j * persize, persize, persize);
+            core.canvas[canvas].drawImage(blockImage, 0, blockIcon.loc * blockIcon.size, blockIcon.size, blockIcon.size, x + i * persize, y + j * persize, persize, persize);
+        }
+    }
 
 }
 
@@ -2219,6 +2290,7 @@ core.prototype.setFirstItem = function () {
             }
         }
     }
+    core.status.flyRange.push(core.firstData.floor);
 }
 
 core.prototype.setStatus = function (statusName, statusVal) {

@@ -17,7 +17,7 @@ maps.prototype.init = function () {
             [4, 4, 4, 4, 4, 1, 0, 1, 4, 4, 4, 4, 4],
             [4, 4, 4, 4, 4, 1, 0, 1, 4, 4, 4, 4, 4],
             [4, 4, 4, 4, 4, 1, 0, 1, 4, 4, 4, 4, 4],
-            [4, 4, 4, 4, 4, 1, 33, 1, 4, 4, 4, 4, 4],
+            [4, 4, 4, 4, 4, 1, 0, 1, 4, 4, 4, 4, 4],
             [4, 4, 4, 4, 4, 1, 0, 1, 4, 4, 4, 4, 4],
         ],
         [
@@ -104,6 +104,7 @@ maps.prototype.init = function () {
         var content = {};
         content['floor'] = f;
         content['title'] = '主塔 ' + f + ' 层';
+        content['canFlyTo'] = true;
         var blocks = [];
         for (var i = 0; i < 13; i++) {
             for (var j = 0; j < 13; j++) {
