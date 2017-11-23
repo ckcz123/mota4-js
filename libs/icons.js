@@ -1,69 +1,69 @@
 function icons() {
-	
+
 }
 
-icons.prototype.init = function() {
-	this.icons = {
-		'heros': {
-			'hero1': {
-				'down': {'loc': {'iconLoc': 0, 'stop': 0, 'leftFoot': 1, 'rightFoot': 2}, 'size': 32},
-				'left': {'loc': {'iconLoc': 1, 'stop': 0, 'leftFoot': 1, 'rightFoot': 2}, 'size': 32},
-				'right': {'loc': {'iconLoc': 2, 'stop': 0, 'leftFoot': 1, 'rightFoot': 2}, 'size': 32},
-				'up': {'loc': {'iconLoc': 3, 'stop': 0, 'leftFoot': 1, 'rightFoot': 2}, 'size': 32}
-			}
-		},
-		'empty': {
-			'empty': {'size': 32}
-		},
-		'terrains': {
-			'blackFloor': {'loc': 0, 'size': 32},
-			'yellowWall': {'loc': 1, 'size': 32},
-			'whiteWall': {'loc': 2, 'size': 32},
-			'blueWall': {'loc': 3, 'size': 32},
-			'starWall': {'loc': 4, 'size': 32},
-			'lavaWall': {'loc': 5, 'size': 32},
-			'downFloor': {'loc': 6, 'size': 32},
-			'upFloor': {'loc': 7, 'size': 32},
-			'cavity': {'loc': 8, 'size': 32},
-			'shop1-left': {'loc': 9, 'size': 32},
-			'shop1-right': {'loc': 10, 'size': 32},
-			'yellowDoor': {'loc': 11, 'size': 32},
-			'blueDoor': {'loc': 12, 'size': 32},
-			'redDoor': {'loc': 13, 'size': 32},
-			'specialDoor': {'loc': 14, 'size': 32}
-		},
-		'animates': {
-			'star': {'loc': 0, 'size': 32},
-			'lava': {'loc': 1, 'size': 32},
-			'water': {'loc': 2, 'size': 32},
-			'yellowDoor': {'loc': 3, 'size': 32},
-			'blueDoor': {'loc': 4, 'size': 32},
-			'redDoor': {'loc': 5, 'size': 32},
-			'greenDoor': {'loc': 6, 'size': 32},
-			'specialDoor': {'loc': 7, 'size': 32},
-			'blueWallDoor': {'loc': 8, 'size': 32},
-			'yellowWallDoor': {'loc': 9, 'size': 32},
-			'whiteWallDoor': {'loc': 10, 'size': 32},
-			'ironDoor': {'loc': 11, 'size': 32},
-			'lavaDoor': {'loc': 12, 'size': 32},
-			'grayLavaDoor': {'loc': 13, 'size': 32},
-			'starDoor': {'loc': 14, 'size': 32},
-			'mockBlueWallDoor': {'loc': 15, 'size': 32},
-			'mockYellowWallDoor': {'loc': 16, 'size': 32},
-			'mockWhiteWallDoor': {'loc': 17, 'size': 32},
-			'iceYellowWallDoor': {'loc': 18, 'size': 32}
-		},
-		'npcs': {
-			'man': {'loc': 0, 'size': 32},
-			'woman': {'loc': 1, 'size': 32},
-			'thief': {'loc': 2, 'size': 32},
-			'fairy': {'loc': 3, 'size': 32},
-			'magician': {'loc': 4, 'size': 32},
+icons.prototype.init = function () {
+    this.icons = {
+        'heros': {
+            'hero1': {
+                'down': {'loc': {'iconLoc': 0, 'stop': 0, 'leftFoot': 1, 'rightFoot': 2}, 'size': 32},
+                'left': {'loc': {'iconLoc': 1, 'stop': 0, 'leftFoot': 1, 'rightFoot': 2}, 'size': 32},
+                'right': {'loc': {'iconLoc': 2, 'stop': 0, 'leftFoot': 1, 'rightFoot': 2}, 'size': 32},
+                'up': {'loc': {'iconLoc': 3, 'stop': 0, 'leftFoot': 1, 'rightFoot': 2}, 'size': 32}
+            }
+        },
+        'empty': {
+            'empty': {'size': 32}
+        },
+        'terrains': {
+            'blackFloor': {'loc': 0, 'size': 32},
+            'yellowWall': {'loc': 1, 'size': 32},
+            'whiteWall': {'loc': 2, 'size': 32},
+            'blueWall': {'loc': 3, 'size': 32},
+            'starWall': {'loc': 4, 'size': 32},
+            'lavaWall': {'loc': 5, 'size': 32},
+            'downFloor': {'loc': 6, 'size': 32},
+            'upFloor': {'loc': 7, 'size': 32},
+            'cavity': {'loc': 8, 'size': 32},
+            'shop1-left': {'loc': 9, 'size': 32},
+            'shop1-right': {'loc': 10, 'size': 32},
+            'yellowDoor': {'loc': 11, 'size': 32},
+            'blueDoor': {'loc': 12, 'size': 32},
+            'redDoor': {'loc': 13, 'size': 32},
+            'specialDoor': {'loc': 14, 'size': 32}
+        },
+        'animates': {
+            'star': {'loc': 0, 'size': 32},
+            'lava': {'loc': 1, 'size': 32},
+            'water': {'loc': 2, 'size': 32},
+            'yellowDoor': {'loc': 3, 'size': 32},
+            'blueDoor': {'loc': 4, 'size': 32},
+            'redDoor': {'loc': 5, 'size': 32},
+            'greenDoor': {'loc': 6, 'size': 32},
+            'specialDoor': {'loc': 7, 'size': 32},
+            'blueWallDoor': {'loc': 8, 'size': 32},
+            'yellowWallDoor': {'loc': 9, 'size': 32},
+            'whiteWallDoor': {'loc': 10, 'size': 32},
+            'ironDoor': {'loc': 11, 'size': 32},
+            'lavaDoor': {'loc': 12, 'size': 32},
+            'grayLavaDoor': {'loc': 13, 'size': 32},
+            'starDoor': {'loc': 14, 'size': 32},
+            'mockBlueWallDoor': {'loc': 15, 'size': 32},
+            'mockYellowWallDoor': {'loc': 16, 'size': 32},
+            'mockWhiteWallDoor': {'loc': 17, 'size': 32},
+            'iceYellowWallDoor': {'loc': 18, 'size': 32}
+        },
+        'npcs': {
+            'man': {'loc': 0, 'size': 32},
+            'woman': {'loc': 1, 'size': 32},
+            'thief': {'loc': 2, 'size': 32},
+            'fairy': {'loc': 3, 'size': 32},
+            'magician': {'loc': 4, 'size': 32},
             'wood': {'loc': 8, 'size': 32},
-			'shop1': {'loc': 10, 'size': 32},
-			'shop2': {'loc': 9, 'size': 32},
+            'shop1': {'loc': 10, 'size': 32},
+            'shop2': {'loc': 9, 'size': 32},
             'princess': {'loc': 11, 'size': 32}
-		},
+        },
         'enemys': {
             'greenSlime': {'loc': 0, 'size': 32},
             'redSlime': {'loc': 1, 'size': 32},
@@ -122,12 +122,12 @@ icons.prototype.init = function() {
             'whiteGhost': {'loc': 54, 'size': 32},
             'poisonZombie': {'loc': 55, 'size': 32}
         },
-		'items': {
-			'yellowKey': {'loc': 0, 'size': 32},
-			'blueKey': {'loc': 1, 'size': 32},
-			'redKey': {'loc': 2, 'size': 32},
-			'greenKey': {'loc': 3, 'size': 32},
-			'redJewel': {'loc': 16, 'size': 32},
+        'items': {
+            'yellowKey': {'loc': 0, 'size': 32},
+            'blueKey': {'loc': 1, 'size': 32},
+            'redKey': {'loc': 2, 'size': 32},
+            'greenKey': {'loc': 3, 'size': 32},
+            'redJewel': {'loc': 16, 'size': 32},
             'blueJewel': {'loc': 17, 'size': 32},
             'greenJewel': {'loc': 18, 'size': 32},
             'yellowJewel': {'loc': 19, 'size': 32},
@@ -135,9 +135,9 @@ icons.prototype.init = function() {
             'bluePotion': {'loc': 21, 'size': 32},
             'greenPotion': {'loc': 22, 'size': 32},
             'yellowPotion': {'loc': 23, 'size': 32},
-			'book': {'loc': 9, 'size': 32},
-			'fly': {'loc': 12, 'size': 32},
-			'sword1': {'loc': 50, 'size': 32},
+            'book': {'loc': 9, 'size': 32},
+            'fly': {'loc': 12, 'size': 32},
+            'sword1': {'loc': 50, 'size': 32},
             'sword2': {'loc': 51, 'size': 32},
             'sword3': {'loc': 52, 'size': 32},
             'sword4': {'loc': 53, 'size': 32},
@@ -147,15 +147,15 @@ icons.prototype.init = function() {
             'shield3': {'loc': 57, 'size': 32},
             'shield4': {'loc': 58, 'size': 32},
             'shield5': {'loc': 59, 'size': 32},
-		}
-	}
+        }
+    }
 }
 
-icons.prototype.getIcons = function(iconName) {
-	if(iconName == undefined) {
-		return this.icons;
-	}
-	return this.icons[iconName];
+icons.prototype.getIcons = function (iconName) {
+    if (iconName == undefined) {
+        return this.icons;
+    }
+    return this.icons[iconName];
 }
 
 main.instance.icons = new icons();

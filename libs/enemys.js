@@ -1,8 +1,8 @@
 function enemys() {
-	
+
 }
 
-enemys.prototype.init = function() {
+enemys.prototype.init = function () {
     this.enemys = {
         'greenSlime': {'name': '绿头怪', 'hp': 130, 'atk': 14, 'def': 4, 'money': 1, 'special': 0},
         'redSlime': {'name': '红头怪', 'hp': 156, 'atk': 21, 'def': 5, 'money': 1, 'special': 0},
@@ -63,25 +63,25 @@ enemys.prototype.init = function() {
     }
 }
 
-enemys.prototype.getEnemys = function(enemyId) {
-    if(enemyId == undefined) {
+enemys.prototype.getEnemys = function (enemyId) {
+    if (enemyId == undefined) {
         return this.enemys;
     }
     return this.enemys[enemyId];
 }
 
-enemys.prototype.getSpecialText = function(enemyId) {
+enemys.prototype.getSpecialText = function (enemyId) {
     if (enemyId == undefined) return "";
     var special = this.enemys[enemyId].special;
-    if (special==1) return "先攻";
-    if (special==2) return "魔攻";
-    if (special==3) return "坚固";
-    if (special==4) return "2连击";
-    if (special==5) return "3连击";
-    if (special==6) return "4连击";
-    if (special==7) return "破甲";
-    if (special==8) return "反击";
-    if (special==9) return "净化";
+    if (special == 1) return "先攻";
+    if (special == 2) return "魔攻";
+    if (special == 3) return "坚固";
+    if (special == 4) return "2连击";
+    if (special == 5) return "3连击";
+    if (special == 6) return "4连击";
+    if (special == 7) return "破甲";
+    if (special == 8) return "反击";
+    if (special == 9) return "净化";
     return "";
 }
 
