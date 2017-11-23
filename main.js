@@ -101,7 +101,6 @@ function main() {
 					{'text': '魔防+5', 'effect': 'mdef+=5'}
 				]
 			},
-
 			'shop2': {
 				'id': 'shop2', 'title': '贪婪之神', 'name': '12楼商店', 'icon': 'shop1',
 				'times': 0, 'need': '40+4*times', 'visited': false,

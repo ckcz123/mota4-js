@@ -58,16 +58,16 @@ function core() {
 		'soundStatus': true,
 		'heroMoving': false,
 		'heroStop': true,
-		'currentOpen': null,
 		'lockControl': false,
-		// 'keyBoardLock': false,
-		'mouseLock': false,
 		'autoHeroMove': false,
 		'automaticRouting': false,
 		'automaticRoued': false,
 		'savePage': 1,
 		'shops': {},
-		'currentEvent': null,
+		'event': {
+			'id': null,
+			'data': null
+		},
 		'screenMode': 'adaptive'
 	}
 	this.temp = {
@@ -118,6 +118,8 @@ core.prototype.init = function(dom, statusBar, canvas, images, sounds, firstData
 
 	core.loader(function() {
 
+        console.log(core.material);
+
 		if (!core.status.isIOS) {
 			if (core.status.soundStatus) {
                 core.playBgm('bgm', 'mp3');
@@ -127,7 +129,6 @@ core.prototype.init = function(dom, statusBar, canvas, images, sounds, firstData
 				core.disabledSound();
 			}
 		}
-
 		/*
 		core.showStartAnimate(function() {
 			
@@ -222,7 +223,6 @@ core.prototype.loader = function(callback) {
 			});
 		}
 	}
-	console.log(core.material);
 }
 
 core.prototype.loadImage = function(imgName, imgSize, callback) {
@@ -333,20 +333,27 @@ core.prototype.onclick = function(x,y) {
 	}
 
     // 怪物手册
-	if (core.status.currentOpen=='book') {
+	if (core.status.event.id=='book') {
 		// 上一页
 		if ((x==3 || x==4) && y==12) {
-			core.drawEnemyBook(core.status.currentEvent-1);
+			core.drawEnemyBook(core.status.event.data-1);
 		}
 		// 下一页
 		if ((x==8 || x==9) && y==12) {
-            core.drawEnemyBook(core.status.currentEvent+1);
+            core.drawEnemyBook(core.status.event.data+1);
 		}
 		return;
 	}
 
+	// 楼层飞行器
+	if (core.status.event.id=='fly') {
+
+
+    	return;
+	}
+
 	// 设置
-	if (core.status.currentOpen=='settings') {
+	if (core.status.event.id=='settings') {
     	if (x>=5 && x<=7) {
     		if (y==3) {
     			if (core.status.isIOS) {
@@ -391,39 +398,39 @@ core.prototype.onclick = function(x,y) {
 	}
 
 	// 商店
-	if (core.status.currentOpen=='shop') {
-    	if (core.status.currentEvent==null) {
+	if (core.status.event.id=='shop') {
+    	if (core.status.event.data==null) {
     		console.log("发生错误，商店不存在？");
     		return;
 		}
     	if (x>=5 && x<=7) {
     		if (y>=5 && y<=8) {
-    			if (y>=5+core.status.currentEvent.choices.length) return;
+    			if (y>=5+core.status.event.data.choices.length) return;
 
     			var hp=core.getStatus('hp'), atk=core.getStatus('atk'),
 					def=core.getStatus('def'), mdef=core.getStatus('mdef'),
 					money=core.getStatus('money'), yellowKey=core.itemCount('yellowKey'),
 					blueKey=core.itemCount('blueKey'), redKey=core.itemCount('redKey');
-    			var times=core.status.currentEvent.times, need=eval(core.status.currentEvent.need);
+    			var times=core.status.event.data.times, need=eval(core.status.event.data.need);
     			if (need>money) {
     				core.drawTip("你的金币不足");
     				return;
 				}
 				money-=need;
-    			eval(core.status.currentEvent.choices[y-5].effect);
+    			eval(core.status.event.data.choices[y-5].effect);
     			core.setStatus('hp', hp); core.setStatus('atk', atk); core.setStatus('def', def);
                 core.setStatus('mdef', mdef); core.setStatus('money', money);
                 core.setItem('yellowKey', yellowKey); core.setItem('blueKey', blueKey);
                 core.setItem('redKey', redKey);
                 core.updateStatusBar();
-                core.status.currentEvent.times++;
-                core.openShop(core.status.currentEvent.id);
+                core.status.event.data.times++;
+                core.openShop(core.status.event.data.id);
 				return;
             }
 
     		// 退出商店
     		if (y==9) {
-    			core.status.currentEvent = null;
+    			core.status.event.data = null;
     			core.closePanel();
     			return;
 			}
@@ -431,7 +438,7 @@ core.prototype.onclick = function(x,y) {
 	}
 
 	// 快捷商店
-    if (core.status.currentOpen=='selectShop') {
+    if (core.status.event.id=='selectShop') {
     	if (x>=5 && x<=7) {
 
             var shopList = core.status.shops, keys=Object.keys(shopList);
@@ -455,11 +462,11 @@ core.prototype.onclick = function(x,y) {
 
 
 	// 选项
-	if (core.status.currentOpen=='confirmBox') {
-    	if ((x==4 || x==5) && y==7 && core.isset(core.status.currentEvent.yes))
-    		core.status.currentEvent.yes();
-        if ((x==7 || x==8) && y==7 && core.isset(core.status.currentEvent.no))
-            core.status.currentEvent.no();
+	if (core.status.event.id=='confirmBox') {
+    	if ((x==4 || x==5) && y==7 && core.isset(core.status.event.data.yes))
+    		core.status.event.data.yes();
+        if ((x==7 || x==8) && y==7 && core.isset(core.status.event.data.no))
+            core.status.event.data.no();
 		return;
 	}
 
@@ -489,7 +496,7 @@ core.prototype.stopAutomaticRoute = function() {
 }
 
 core.prototype.setAutomaticRoute = function(destX, destY) {
-	if(!core.status.played || core.status.mouseLock) {
+	if(!core.status.played || core.status.lockControl) {
 		return;
 	}
 	else if(core.status.automaticRouting) {
@@ -722,13 +729,21 @@ core.prototype.setHeroMoveInterval = function(direction, x, y, callback) {
 	core.interval.heroMoveInterval = window.setInterval(function() {
 		switch(direction) {
 			case 'up':
-				moveStep -= 4;
+				moveStep -= 8;
+				/*
 				if(moveStep == -4 || moveStep == -8 || moveStep == -12 || moveStep == -16) {
 					core.drawHero(direction, x, y, 'leftFoot', 0, moveStep);
 				}
 				else if(moveStep == -20 || moveStep == -24 ||moveStep == -28 || moveStep == -32) {
 					core.drawHero(direction, x, y, 'rightFoot', 0, moveStep);
 				}
+				*/
+				if (moveStep==-8)
+                    core.drawHero(direction, x, y, 'leftFoot', 0, moveStep);
+				if (moveStep==-16)
+                    core.drawHero(direction, x, y, 'stop', 0, moveStep);
+				if (moveStep==-24)
+                    core.drawHero(direction, x, y, 'rightFoot', 0, moveStep);
 				if(moveStep == -32) {
 					core.setHeroLoc('y', '--');
 					if(core.status.heroStop) {
@@ -740,13 +755,21 @@ core.prototype.setHeroMoveInterval = function(direction, x, y, callback) {
 				}
 			break;
 			case 'left':
-				moveStep -= 4;
+				moveStep -= 8;
+				/*
 				if(moveStep == -4 || moveStep == -8 || moveStep == -12 || moveStep == -16) {
 					core.drawHero(direction, x, y, 'leftFoot', moveStep);
 				}
 				else if(moveStep == -20 || moveStep == -24 ||moveStep == -28 || moveStep == -32) {
 					core.drawHero(direction, x, y, 'rightFoot', moveStep);
 				}
+				*/
+                if (moveStep==-8)
+                    core.drawHero(direction, x, y, 'leftFoot', moveStep);
+                if (moveStep==-16)
+                    core.drawHero(direction, x, y, 'stop', moveStep);
+                if (moveStep==-24)
+                    core.drawHero(direction, x, y, 'rightFoot', moveStep);
 				if(moveStep == -32) {
 					core.setHeroLoc('x', '--');
 					if(core.status.heroStop) {
@@ -758,14 +781,22 @@ core.prototype.setHeroMoveInterval = function(direction, x, y, callback) {
 				}
 			break;
 			case 'down':
-				moveStep += 4;
+				moveStep += 8;
+				/*
 				if(moveStep == 4 || moveStep == 8 || moveStep == 12 || moveStep == 16) {
 					core.drawHero(direction, x, y, 'leftFoot', 0, moveStep);
 				}
 				else if(moveStep == 20 || moveStep == 24 ||moveStep == 28 || moveStep == 32) {
 					core.drawHero(direction, x, y, 'rightFoot', 0, moveStep);
 				}
-				if(moveStep == 32) {
+				*/
+                if (moveStep==8)
+                    core.drawHero(direction, x, y, 'leftFoot', 0, moveStep);
+                if (moveStep==16)
+                    core.drawHero(direction, x, y, 'stop', 0, moveStep);
+                if (moveStep==24)
+                    core.drawHero(direction, x, y, 'rightFoot', 0, moveStep);
+				if(moveStep==32) {
 					core.setHeroLoc('y', '++');
 					if(core.status.heroStop) {
 						core.drawHero(direction, x, y + 1, 'stop');
@@ -776,13 +807,21 @@ core.prototype.setHeroMoveInterval = function(direction, x, y, callback) {
 				}
 			break;
 			case 'right':
-				moveStep += 4;
+				moveStep += 8;
+				/*
 				if(moveStep == 4 || moveStep == 8 || moveStep == 12 || moveStep == 16) {
 					core.drawHero(direction, x, y, 'leftFoot', moveStep);
 				}
 				else if(moveStep == 20 || moveStep == 24 ||moveStep == 28 || moveStep == 32) {
 					core.drawHero(direction, x, y, 'rightFoot', moveStep);
 				}
+				*/
+                if (moveStep==8)
+                    core.drawHero(direction, x, y, 'leftFoot', moveStep);
+                if (moveStep==16)
+                    core.drawHero(direction, x, y, 'stop', moveStep);
+                if (moveStep==24)
+                    core.drawHero(direction, x, y, 'rightFoot', moveStep);
 				if(moveStep == 32) {
 					core.setHeroLoc('x', '++');
 					if(core.status.heroStop) {
@@ -794,7 +833,7 @@ core.prototype.setHeroMoveInterval = function(direction, x, y, callback) {
 				}
 			break;
 		}
-	}, 16.7);
+	}, 16.7*2);
 }
 
 core.prototype.setHeroMoveTriggerInterval = function() {
@@ -1801,8 +1840,8 @@ core.prototype.upload = function() {
 
 core.prototype.showConfirmBox = function(text, yesCallback, noCallback) {
 
-	core.status.currentOpen = 'confirmBox';
-	core.status.currentEvent = {'yes': yesCallback, 'no': noCallback};
+	core.status.event.id = 'confirmBox';
+	core.status.event.data = {'yes': yesCallback, 'no': noCallback};
 
     var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
     core.clearMap('ui', 0, 0, 416, 416);
@@ -1824,7 +1863,7 @@ core.prototype.showConfirmBox = function(text, yesCallback, noCallback) {
 }
 
 core.prototype.checkStatus = function(name, need, item) {
-    if (need && core.status.currentOpen == name) {
+    if (need && core.status.event.id == name) {
         core.closePanel();
         return false;
     }
@@ -1841,7 +1880,7 @@ core.prototype.checkStatus = function(name, need, item) {
 
     core.lockControl();
     core.temp.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
-    core.status.currentOpen = name;
+    core.status.event.id = name;
     return true;
 }
 
@@ -1899,7 +1938,7 @@ core.prototype.openSettings = function(need) {
 
 core.prototype.selectShop = function() {
 
-    core.status.currentOpen = 'selectShop';
+    core.status.event.id = 'selectShop';
     var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
     core.clearMap('ui', 0, 0, 416, 416);
     core.setAlpha('ui', 1);
@@ -1930,8 +1969,8 @@ core.prototype.openShop = function(id) {
 		}, 30);
 		return;
 	}
-	core.status.currentEvent = shop;
-    core.status.currentOpen = 'shop';
+	core.status.event.data = shop;
+    core.status.event.id = 'shop';
     core.lockControl();
     shop.visited = true;
 
@@ -1987,8 +2026,8 @@ core.prototype.closePanel = function() {
     core.setAlpha('ui', 1.0);
     core.clearMap('data', 0, 0, 416, 416);
     core.unLockControl();
-    core.status.currentEvent = null;
-    core.status.currentOpen = null;
+    core.status.event.data = null;
+    core.status.event.id = null;
 }
 
 core.prototype.getCurrentEnemys = function() {
@@ -2053,7 +2092,7 @@ core.prototype.drawEnemyBook = function (page) {
 	var totalPage = parseInt((enemys.length-1)/perpage)+1;
 	if (page<1) page=1;
 	if (page>totalPage) page=totalPage;
-	core.status.currentEvent = page;
+	core.status.event.data = page;
 	var start = (page-1)*perpage, end = Math.min(page*perpage, enemys.length);
 
 	enemys = enemys.slice(start, end);
