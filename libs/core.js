@@ -1813,7 +1813,7 @@ core.prototype.getItemEffect = function (itemId, itemNum) {
 }
 
 core.prototype.getItemEffectTip = function (itemId) {
-    var currfloor = parseInt(core.status.hero.floor);
+    var currfloor = parseInt(core.status.thisMap.name);
     var hard = parseInt((currfloor + 4) / 5);
 
     if (itemId === 'redJewel') return "攻击+" + (1 + hard);
