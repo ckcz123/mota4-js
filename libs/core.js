@@ -18,7 +18,6 @@ function core() {
         'ground': null,
         'items': {},
         'enemys': {},
-        'maps': {},
         'icons': {},
         'events': {}
     }
@@ -30,60 +29,72 @@ function core() {
         'twoAnimate': null,
         'fourAnimate': null,
         'boxAnimate': null,
-        'changeAnimate': null,
         'heroMoveTriggerInterval': null,
         'heroMoveInterval': null,
         'heroAutoMoveScan': null,
-        'getItemAnimate': [],
-        'getItemTipAnimate': null,
+        "tipAnimate": null,
         'openDoorAnimate': null
     }
-    this.status = {
+    this.musicStatus = {
+        'isIOS': false,
+        'soundStatus': true,
+        'playedSound': null,
+        'playedBgm': null,
+    }
+    this.initStatus = {
+        'played': false,
+
+        // 勇士属性
         'hero': {
             'id': '',
             'name': '',
-            'floor': 0,
             'hp': 0,
             'atk': 0,
             'def': 0,
             'mdef': 0,
             'money': 0,
+            'loc': {'direction': 'down', 'x': 0, 'y': 0},
+            'flyRange': [],
+            'items': [],
         },
-        'hard': 10,
-        'flyRange': [],
-        'played': false,
-        'isIOS': false,
-        'soundStatus': true,
+        'hard': null,
+
+        // 当前地图
+        'floorId': null,
+        'thisMap': null,
+        'maps': null,
+
+        // 屏幕状态
+        'screenMode': 'adaptive',
+
+        // 勇士状态
         'heroMoving': false,
         'heroStop': true,
         'lockControl': false,
         'autoHeroMove': false,
         'automaticRouting': false,
-        'automaticRoued': false,
-        'savePage': 1,
+        'automaticRouted': false,
+        'autoStep': 0,
+        'movedStep': 0,
+        'destStep': 0,
+        'automaticRoutingTemp': {'destX': 0, 'destY': 0, 'moveStep': []},
+
+        // event事件
+        'savePage': null,
         'shops': {},
+        'npcs': {},
         'event': {
             'id': null,
             'data': null
         },
-        'screenMode': 'adaptive'
-    }
-    this.temp = {
-        'itemList': [],
-        'floorId': null,
-        'thisMap': null,
-        'playedSound': null,
-        'playedBgm': null,
+        'openingDoor': null,
+
+        // 动画
         'twoAnimateObjs': [],
         'fourAnimateObjs': [],
         'boxAnimateObjs': [],
-        'openingDoor': null,
-        'heroLoc': {'direction': 'down', 'x': 0, 'y': 0},
-        'autoStep': 0,
-        'movedStep': 0,
-        'destStep': 0,
-        'automaticRoutingTemp': {'destX': 0, 'destY': 0, 'moveStep': []}
-    }
+    };
+    this.status = {};
 }
 
 core.prototype.init = function (dom, statusBar, canvas, images, sounds, firstData, coreData) {
@@ -96,44 +107,43 @@ core.prototype.init = function (dom, statusBar, canvas, images, sounds, firstDat
     for (var key in coreData) {
         core[key] = coreData[key];
     }
-    core.status.shops = firstData.shops;
+    core.initStatus.shops = firstData.shops;
+    core.initStatus.npcs = firstData.npcs;
     core.dom.versionLabel.innerHTML = firstData.version;
     core.material.items = core.items.getItems();
-    core.material.maps = core.maps.getMaps();
+    // core.status.maps = core.maps.getMaps();
+    core.initStatus.maps = core.maps.getMaps();
     core.material.enemys = core.enemys.getEnemys();
     core.material.icons = core.icons.getIcons();
     core.material.events = core.events.getEvents();
+
     // test if iOS
+    core.musicStatus.soundStatus = core.getLocalStorage('soundStatus', true);
     var userAgent = navigator.userAgent;
     if (userAgent.indexOf('iPhone') > -1 || userAgent.indexOf('iPad') > -1) {
         console.log("你的设备为iphone，不自动播放音乐！");
-        core.status.isIOS = true;
-        core.status.soundStatus = false;
+        core.musicStatus.isIOS = true;
+        core.musicStatus.soundStatus = false;
     }
 
     core.material.ground = new Image();
     core.material.ground.src = "images/ground.png";
 
     core.loader(function () {
-
         console.log(core.material);
+        // core.showStartAnimate();
 
-        if (!core.status.isIOS) {
-            if (core.status.soundStatus) {
-                core.playBgm('bgm', 'mp3');
+        core.playBgm('bgm', 'mp3');
+        if (!core.musicStatus.isIOS) {
+            if (core.musicStatus.soundStatus) {
                 core.enabledSound();
             }
             else {
                 core.disabledSound();
             }
         }
-        /*
-        core.showStartAnimate(function() {
 
-        });
-        */
         core.playGame();
-
 
     });
 }
@@ -147,7 +157,7 @@ core.prototype.showStartAnimate = function (callback) {
             core.dom.startTop.style.display = 'none';
             core.playGame();
             // core.dom.startButtonGroup.style.display = 'block';
-            callback();
+            if (core.isset(callback)) callback();
         }
         core.dom.startTop.style.opacity = opacityVal;
     }, 30);
@@ -190,7 +200,7 @@ core.prototype.loader = function (callback) {
                 // core.setStartLoadTipText(imgName + ' 加载完毕...');
                 core.setStartProgressVal(loadedImageNum * (100 / allImageNum));
                 if (loadedImageNum == allImageNum) {
-                    if (core.status.isIOS) {
+                    if (core.musicStatus.isIOS) {
                         callback();
                         return;
                     }
@@ -252,25 +262,68 @@ core.prototype.loadSound = function (soundName, soundType, callback) {
     }, 15000);
 }
 
+core.prototype.isPlaying = function() {
+    if (core.isset(core.status.played) && core.status.played)
+        return true;
+    return false;
+}
+
+core.prototype.resetStatus = function(hero, hard, floorId, maps) {
+
+    // 停止各个Timeout和Interval
+    for (var i in core.interval) {
+        clearInterval(core.interval[i]);
+    }
+
+    // 初始化status
+    core.status = core.clone(core.initStatus);
+    core.status.played = true;
+    // 初始化maps
+    core.status.floorId = floorId;
+    core.status.maps = core.clone(maps);
+    // 初始化人物属性
+    core.status.hero = core.clone(hero);
+    core.status.hard = hard;
+    // 保存页面
+    core.status.savePage = core.getLocalStorage('savePage', 0);
+
+    core.resize(main.dom.body.clientWidth, main.dom.body.clientHeight);
+
+}
+
 core.prototype.playGame = function () {
-    if (core.status.played) {
+    if (core.isPlaying()) {
         return;
     }
-    core.status.played = true;
+    core.resetStatus(core.firstData.hero, core.firstData.hard, core.firstData.floorId,
+        core.initStatus.maps);
+
     console.log('开始游戏');
-    core.setFirstItem();
-    core.setFloorName(core.firstData.floor);
+
+    // core.setFirstItem();
+    core.dom.floorNameLabel.innerHTML = core.status.maps[core.status.floorId].title;
+    core.statusBar.floor.innerHTML = core.status.maps[core.status.floorId].name;
     core.updateStatusBar();
     core.hideStartAnimate(function () {
-        core.drawMap(core.firstData.floor, function () {
-            core.playSound('floor', 'mp3');
+        core.playSound('floor', 'mp3');
+        core.drawMap(core.status.floorId, function () {
             core.hide(core.dom.floorMsgGroup, 10);
-            core.setHeroLoc('direction', core.firstData.hero.loc.direction);
-            core.setHeroLoc('x', core.firstData.hero.loc.x);
-            core.setHeroLoc('y', core.firstData.hero.loc.y);
+            core.setHeroLoc('direction', core.status.hero.loc.direction);
+            core.setHeroLoc('x', core.status.hero.loc.x);
+            core.setHeroLoc('y', core.status.hero.loc.y);
             core.drawHero(core.getHeroLoc('direction'), core.getHeroLoc('x'), core.getHeroLoc('y'), 'stop');
             core.setHeroMoveTriggerInterval();
         });
+    });
+}
+
+core.prototype.restart = function() {
+    core.resetStatus(core.firstData.hero, core.firstData.hard, core.firstData.floorId,
+        core.initStatus.maps);
+
+    core.changeFloor(core.firstData.floorId, null, core.firstData.hero.loc, function() {
+        core.drawTip('重新开始游戏');
+        core.setHeroMoveTriggerInterval();
     });
 }
 /*
@@ -278,7 +331,7 @@ core.prototype.keyDown = function(e) {
 	if(!core.status.played || core.status.keyBoardLock) {
 		return;
 	}
-	if(core.status.automaticRouting || core.status.automaticRoued) {
+	if(core.status.automaticRouting || core.status.automaticRouted) {
 		core.stopAutomaticRoute();
 	}
 	switch(e.keyCode) {
@@ -336,20 +389,24 @@ core.prototype.onclick = function (x, y) {
         if ((x == 8 || x == 9) && y == 12) {
             core.drawEnemyBook(core.status.event.data + 1);
         }
+        // 返回
+        if (x>=10 && x<=12 && y==12) {
+            core.closePanel(true);
+        }
         return;
     }
 
     // 楼层飞行器
     if (core.status.event.id == 'fly') {
-        if ((x==10 || x==11) && y==5) core.drawFly(core.status.event.data-1);
-        if ((x==10 || x==11) && y==9) core.drawFly(core.status.event.data+1);
+        if ((x==10 || x==11) && y==9) core.drawFly(core.status.event.data-1);
+        if ((x==10 || x==11) && y==5) core.drawFly(core.status.event.data+1);
         if (x>=5 && x<=7 && y==12) core.closePanel();
         if (x>=0 && x<=9 && y>=3 && y<=11) {
-            var index=core.status.flyRange.indexOf(core.temp.floorId);
+            var index=core.status.hero.flyRange.indexOf(core.status.floorId);
             var stair=core.status.event.data<index?"upFloor":"downFloor";
             var floorId=core.status.event.data;
+            core.changeFloor(core.status.hero.flyRange[floorId], stair);
             core.closePanel();
-            core.changeFloor(core.status.flyRange[floorId], stair);
         }
         return;
     }
@@ -358,7 +415,7 @@ core.prototype.onclick = function (x, y) {
     if (core.status.event.id == 'settings') {
         if (x >= 5 && x <= 7) {
             if (y == 3) {
-                if (core.status.isIOS) {
+                if (core.musicStatus.isIOS) {
                     core.drawTip("iOS设备不支持播放音乐");
                     return;
                 }
@@ -386,8 +443,9 @@ core.prototype.onclick = function (x, y) {
             }
             if (y == 8) {
                 core.showConfirmBox("你确定要重新开始吗？", function () {
-                    core.drawTip("重新开始游戏");
+                    // core.drawTip("重新开始游戏");
                     core.closePanel();
+                    core.restart();
                 }, function () {
                     core.openSettings(false);
                 });
@@ -464,6 +522,34 @@ core.prototype.onclick = function (x, y) {
         return;
     }
 
+    // 存读档
+    if (core.status.event.id == 'save' || core.status.event.id == 'load') {
+        // 上一页
+        if ((x == 3 || x == 4) && y == 12) {
+            core.drawSLPanel(core.status.event.data - 1);
+        }
+        // 下一页
+        if ((x == 8 || x == 9) && y == 12) {
+            core.drawSLPanel(core.status.event.data + 1);
+        }
+        // 返回
+        if (x>=10 && x<=12 && y==12) {
+            core.closePanel(false);
+        }
+
+        var index=6*core.status.event.data+1;
+        if (y>=1 && y<=4) {
+            if (x>=1 && x<=3) core.doSL(index, core.status.event.id);
+            if (x>=5 && x<=7) core.doSL(index+1, core.status.event.id);
+            if (x>=9 && x<=11) core.doSL(index+2, core.status.event.id);
+        }
+        if (y>=7 && y<=10) {
+            if (x>=1 && x<=3) core.doSL(index+3, core.status.event.id);
+            if (x>=5 && x<=7) core.doSL(index+4, core.status.event.id);
+            if (x>=9 && x<=11) core.doSL(index+5, core.status.event.id);
+        }
+        return;
+    }
 
     // 选项
     if (core.status.event.id == 'confirmBox') {
@@ -494,8 +580,8 @@ core.prototype.stopAutomaticRoute = function () {
     }
     core.stopAutoHeroMove();
     core.status.automaticRouting = false;
-    core.status.automaticRoued = false;
-    core.temp.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
+    core.status.automaticRouted = false;
+    core.status.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
     core.canvas.ui.clearRect(0, 0, 416, 416);
 }
 
@@ -507,35 +593,35 @@ core.prototype.setAutomaticRoute = function (destX, destY) {
         core.stopAutomaticRoute();
         return;
     }
-    if (destX == core.temp.heroLoc.x && destY == core.temp.heroLoc.y) {
-        if (core.temp.heroLoc.direction == 'up') core.temp.heroLoc.direction = 'right';
-        else if (core.temp.heroLoc.direction == 'right') core.temp.heroLoc.direction = 'down';
-        else if (core.temp.heroLoc.direction == 'down') core.temp.heroLoc.direction = 'left';
-        else if (core.temp.heroLoc.direction == 'left') core.temp.heroLoc.direction = 'up';
-        core.drawHero(core.temp.heroLoc.direction, core.temp.heroLoc.x, core.temp.heroLoc.y, 'stop', 0, 0);
-        core.temp.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
+    if (destX == core.status.hero.loc.x && destY == core.status.hero.loc.y) {
+        if (core.status.hero.loc.direction == 'up') core.status.hero.loc.direction = 'right';
+        else if (core.status.hero.loc.direction == 'right') core.status.hero.loc.direction = 'down';
+        else if (core.status.hero.loc.direction == 'down') core.status.hero.loc.direction = 'left';
+        else if (core.status.hero.loc.direction == 'left') core.status.hero.loc.direction = 'up';
+        core.drawHero(core.status.hero.loc.direction, core.status.hero.loc.x, core.status.hero.loc.y, 'stop', 0, 0);
+        core.status.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
         core.canvas.ui.clearRect(0, 0, 416, 416);
         return;
     }
     // 直接移动
     /*
-    if(core.temp.automaticRoutingTemp.moveStep.length != 0 && core.temp.automaticRoutingTemp.destX == destX && core.temp.automaticRoutingTemp.destY == destY) {
+    if(core.status.automaticRoutingTemp.moveStep.length != 0 && core.status.automaticRoutingTemp.destX == destX && core.status.automaticRoutingTemp.destY == destY) {
         core.status.automaticRouting = true;
-        core.setAutoHeroMove(core.temp.automaticRoutingTemp.moveStep);
-        core.temp.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
+        core.setAutoHeroMove(core.status.automaticRoutingTemp.moveStep);
+        core.status.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
         return;
     }
     */
     var step = 0;
     var tempStep = null;
     var moveStep;
-    core.temp.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
+    core.status.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
     if (!(moveStep = core.automaticRoute(destX, destY))) {
         core.canvas.ui.clearRect(0, 0, 416, 416);
         return false;
     }
-    core.temp.automaticRoutingTemp.destX = destX;
-    core.temp.automaticRoutingTemp.destY = destY;
+    core.status.automaticRoutingTemp.destX = destX;
+    core.status.automaticRoutingTemp.destY = destY;
     core.canvas.ui.save();
     core.canvas.ui.clearRect(0, 0, 416, 416);
     core.canvas.ui.fillStyle = '#bfbfbf';
@@ -550,12 +636,12 @@ core.prototype.setAutomaticRoute = function (destX, destY) {
             step++;
         }
         else {
-            core.temp.automaticRoutingTemp.moveStep.push({'direction': tempStep, 'step': step});
+            core.status.automaticRoutingTemp.moveStep.push({'direction': tempStep, 'step': step});
             step = 1;
             tempStep = moveStep[m].direction;
         }
         if (m == moveStep.length - 1) {
-            core.temp.automaticRoutingTemp.moveStep.push({'direction': tempStep, 'step': step});
+            core.status.automaticRoutingTemp.moveStep.push({'direction': tempStep, 'step': step});
             core.canvas.ui.fillRect(moveStep[m].x * 32 + 10, moveStep[m].y * 32 + 10, 12, 12);
         }
         else {
@@ -603,12 +689,12 @@ core.prototype.setAutomaticRoute = function (destX, destY) {
         }
     }
     core.canvas.ui.restore();
-    core.status.automaticRoued = true;
+    core.status.automaticRouted = true;
 
     // 立刻移动
     core.status.automaticRouting = true;
-    core.setAutoHeroMove(core.temp.automaticRoutingTemp.moveStep);
-    core.temp.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
+    core.setAutoHeroMove(core.status.automaticRoutingTemp.moveStep);
+    core.status.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
 
 }
 // BFS
@@ -683,10 +769,10 @@ core.prototype.automaticRoute = function (destX, destY) {
 core.prototype.stopAutoHeroMove = function () {
     core.status.autoHeroMove = false;
     core.status.automaticRouting = false;
-    core.status.automaticRoued = false;
-    core.temp.autoStep = 0;
-    core.temp.destStep = 0;
-    core.temp.movedStep = 0;
+    core.status.automaticRouted = false;
+    core.status.autoStep = 0;
+    core.status.destStep = 0;
+    core.status.movedStep = 0;
     core.stopHero();
     clearInterval(core.interval.heroAutoMoveScan);
 }
@@ -695,23 +781,23 @@ core.prototype.setAutoHeroMove = function (steps, start) {
     if (steps.length == 0) {
         return;
     }
-    core.temp.autoStep = 0;
+    core.status.autoStep = 0;
     clearInterval(core.interval.heroAutoMoveScan);
     core.interval.heroAutoMoveScan = window.setInterval(function () {
         if (!core.status.autoHeroMove) {
-            if (core.temp.autoStep == steps.length) {
+            if (core.status.autoStep == steps.length) {
                 core.stopAutoHeroMove();
                 return;
             }
-            core.autoHeroMove(steps[core.temp.autoStep].direction, steps[core.temp.autoStep].step);
-            core.temp.autoStep++;
+            core.autoHeroMove(steps[core.status.autoStep].direction, steps[core.status.autoStep].step);
+            core.status.autoStep++;
         }
     }, 100);
 }
 
 core.prototype.autoHeroMove = function (direction, step) {
     core.status.autoHeroMove = true;
-    core.temp.destStep = step;
+    core.status.destStep = step;
     core.moveHero(direction);
 }
 
@@ -739,15 +825,6 @@ core.prototype.setHeroMoveInterval = function (direction, x, y, callback) {
                 else if (moveStep == -20 || moveStep == -24 || moveStep == -28 || moveStep == -32) {
                     core.drawHero(direction, x, y, 'rightFoot', 0, moveStep);
                 }
-                /*
-                moveStep -= 8;
-                if (moveStep==-8)
-                    core.drawHero(direction, x, y, 'leftFoot', 0, moveStep);
-                if (moveStep==-16)
-                    core.drawHero(direction, x, y, 'stop', 0, moveStep);
-                if (moveStep==-24)
-                    core.drawHero(direction, x, y, 'rightFoot', 0, moveStep);
-                */
                 if (moveStep == -32) {
                     core.setHeroLoc('y', '--');
                     if (core.status.heroStop) {
@@ -766,15 +843,6 @@ core.prototype.setHeroMoveInterval = function (direction, x, y, callback) {
                 else if (moveStep == -20 || moveStep == -24 || moveStep == -28 || moveStep == -32) {
                     core.drawHero(direction, x, y, 'rightFoot', moveStep);
                 }
-                /*
-                moveStep -= 8;
-                if (moveStep==-8)
-                    core.drawHero(direction, x, y, 'leftFoot', moveStep);
-                if (moveStep==-16)
-                    core.drawHero(direction, x, y, 'stop', moveStep);
-                if (moveStep==-24)
-                    core.drawHero(direction, x, y, 'rightFoot', moveStep);
-                */
                 if (moveStep == -32) {
                     core.setHeroLoc('x', '--');
                     if (core.status.heroStop) {
@@ -793,15 +861,6 @@ core.prototype.setHeroMoveInterval = function (direction, x, y, callback) {
                 else if(moveStep == 20 || moveStep == 24 ||moveStep == 28 || moveStep == 32) {
                     core.drawHero(direction, x, y, 'rightFoot', 0, moveStep);
                 }
-                /*
-                moveStep += 8;
-                if (moveStep == 8)
-                    core.drawHero(direction, x, y, 'leftFoot', 0, moveStep);
-                if (moveStep == 16)
-                    core.drawHero(direction, x, y, 'stop', 0, moveStep);
-                if (moveStep == 24)
-                    core.drawHero(direction, x, y, 'rightFoot', 0, moveStep);
-                */
                 if (moveStep == 32) {
                     core.setHeroLoc('y', '++');
                     if (core.status.heroStop) {
@@ -820,15 +879,6 @@ core.prototype.setHeroMoveInterval = function (direction, x, y, callback) {
                 else if(moveStep == 20 || moveStep == 24 ||moveStep == 28 || moveStep == 32) {
                     core.drawHero(direction, x, y, 'rightFoot', moveStep);
                 }
-                /*
-                moveStep += 8;
-                if (moveStep == 8)
-                    core.drawHero(direction, x, y, 'leftFoot', moveStep);
-                if (moveStep == 16)
-                    core.drawHero(direction, x, y, 'stop', moveStep);
-                if (moveStep == 24)
-                    core.drawHero(direction, x, y, 'rightFoot', moveStep);
-                */
                 if (moveStep == 32) {
                     core.setHeroLoc('x', '++');
                     if (core.status.heroStop) {
@@ -862,11 +912,11 @@ core.prototype.setHeroMoveTriggerInterval = function () {
                 core.trigger(x + scan[direction].x, y + scan[direction].y);
                 core.drawHero(direction, x, y, 'stop');
                 if (core.status.autoHeroMove) {
-                    core.temp.movedStep++;
-                    if (core.temp.destStep == core.temp.movedStep) {
+                    core.status.movedStep++;
+                    if (core.status.destStep == core.status.movedStep) {
                         core.status.autoHeroMove = false;
-                        core.temp.destStep = 0;
-                        core.temp.movedStep = 0;
+                        core.status.destStep = 0;
+                        core.status.movedStep = 0;
                         core.stopHero();
                     }
                 }
@@ -877,11 +927,11 @@ core.prototype.setHeroMoveTriggerInterval = function () {
             }
             core.setHeroMoveInterval(direction, x, y, function () {
                 if (core.status.autoHeroMove) {
-                    core.temp.movedStep++;
-                    if (core.temp.destStep == core.temp.movedStep) {
+                    core.status.movedStep++;
+                    if (core.status.destStep == core.status.movedStep) {
                         core.status.autoHeroMove = false;
-                        core.temp.destStep = 0;
-                        core.temp.movedStep = 0;
+                        core.status.destStep = 0;
+                        core.status.movedStep = 0;
                         core.stopHero();
                         core.drawHero(core.getHeroLoc('direction'), core.getHeroLoc('x'), core.getHeroLoc('y'), 'stop');
                     }
@@ -898,7 +948,7 @@ core.prototype.setHeroMoveTriggerInterval = function () {
 }
 
 core.prototype.moveHero = function (direction) {
-    var heroIcon = core.material.icons.heros[core.firstData.hero.id][direction];
+    var heroIcon = core.material.icons.heros[core.status.hero.id][direction];
     core.setHeroLoc('direction', direction);
     core.status.heroStop = false;
 }
@@ -911,7 +961,7 @@ core.prototype.drawHero = function (direction, x, y, status, offsetX, offsetY) {
     offsetX = offsetX || 0;
     offsetY = offsetY || 0;
     core.clearAutomaticRouteNode(x, y);
-    var heroIcon = core.material.icons.heros[core.firstData.hero.id][direction];
+    var heroIcon = core.material.icons.heros[core.status.hero.id][direction];
     x = x * heroIcon.size;
     y = y * heroIcon.size;
     core.canvas.hero.clearRect(x - 32, y - 32, 96, 96);
@@ -979,19 +1029,56 @@ core.prototype.battle = function (id, x, y) {
 
     // 打完怪物，触发事件
 
-    if (id == 'skeleton' && core.temp.thisMap.floor == 3 && !core.enemyExists(9, 4) && !core.enemyExists(11, 4)) {
-        // 3楼商店门
+    if (id == 'skeleton' && core.status.floorId == 'MT3' && !core.enemyExists(9, 4) && !core.enemyExists(11, 4)) {
         core.openDoor('specialDoor', 10, 3, false);
     }
-    if (id == 'skeletonSoilder' && core.temp.thisMap.floor == 3 && !core.enemyExists(9, 9) && !core.enemyExists(11, 9)) {
-        // 3楼盾前门
+    if (id == 'skeletonSoilder' && core.status.floorId == 'MT3' && !core.enemyExists(9, 9) && !core.enemyExists(11, 9)) {
         core.openDoor('specialDoor', 10, 8, false);
     }
-    if (id == 'skeletonCaptain' && core.temp.thisMap.floor == 5) {
-        // 5楼机关门
+    if (id == 'skeletonCaptain' && core.status.floorId == 'MT5') {
         core.openDoor('specialDoor', 6, 3, false);
         core.upload();
     }
+    if (id=='zombieKnight' && core.status.floorId=='MT8' && !core.enemyExists(9, 7) && !core.enemyExists(11, 7)) {
+        core.openDoor('specialDoor', 10, 8, false);
+    }
+    if (id=='rock' && core.status.floorId=='MT9' && !core.enemyExists(3, 1) && !core.enemyExists(3, 3)) {
+        core.openDoor('specialDoor', 2, 2, false);
+    }
+    if (id=='vampire' && core.status.floorId=='MT10') {
+        core.openDoor('specialDoor', 6, 3, false);
+        core.upload();
+    }
+    if (id=='blueGuard' && core.status.floorId=='MT12' && !core.enemyExists(9, 8) && !core.enemyExists(11, 8)) {
+        core.openDoor('specialDoor', 10, 7, false);
+    }
+    if (id=='redBat' && core.status.floorId=='MT12' && !core.enemyExists(9, 6) && !core.enemyExists(11, 6)) {
+        core.openDoor('specialDoor', 10, 5, false);
+    }
+    if (id=='ghostSkeleton' && core.status.floorId=='MT12' && !core.enemyExists(9, 4) && !core.enemyExists(11, 4)) {
+        core.openDoor('specialDoor', 10, 3, false);
+    }
+    if ((id=='soldier' || id=='redKnight') && core.status.floorId=='MT13' && !core.enemyExists(7, 1) && !core.enemyExists(7, 3)) {
+        core.openDoor('specialDoor', 8, 2, false);
+    }
+    if (id=='redKnight' && core.status.floorId=='MT14' && !core.enemyExists(9, 4) && !core.enemyExists(9, 6)) {
+        core.openDoor('specialDoor', 8, 5, false);
+    }
+    if (id=='yellowKnight' && core.status.floorId=='MT15') {
+        core.openDoor('specialDoor', 6, 9, false);
+        core.upload();
+    }
+    if (id=='blueKnight' && core.status.floorId=='MT17' && !core.enemyExists(5, 7) && !core.enemyExists(7, 7)) {
+        core.openDoor('specialDoor', 6, 8, false);
+    }
+    if (id=='blackKing' && core.status.floorId=='MT20') {
+        core.upload();
+        core.win();
+    }
+
+
+
+
 
 }
 
@@ -1080,23 +1167,24 @@ core.prototype.calDamage = function (hero_atk, hero_def, hero_mdef, mon_hp, mon_
     return ans <= 0 ? 0 : ans;
 }
 
-core.prototype.changeFloor = function (floorId, stair, heroLoc) {
+core.prototype.changeFloor = function (floorId, stair, heroLoc, callback) {
     core.lockControl();
     core.stopHero();
-    core.setFloorName(floorId);
+    core.stopAutomaticRoute();
+    core.dom.floorNameLabel.innerHTML = core.status.maps[floorId].title;
     if (core.isset(stair)) {
         // find heroLoc
-        heroLoc = core.temp.heroLoc;
-        var blocks = core.material.maps[floorId].blocks;
+        heroLoc = core.status.hero.loc;
+        var blocks = core.status.maps[floorId].blocks;
         for (var i in blocks) {
             if (core.isset(blocks[i].event) && blocks[i].event.id === stair) {
                 heroLoc.x = blocks[i].x;
                 heroLoc.y = blocks[i].y;
             }
         }
-        if (core.material.maps[floorId].canFlyTo && core.status.flyRange.indexOf(floorId)<0) {
-            if (stair=='upFloor') core.status.flyRange.unshift(floorId);
-            if (stair=='downFloor') core.status.flyRange.push(floorId);
+        if (core.status.maps[floorId].canFlyTo && core.status.hero.flyRange.indexOf(floorId)<0) {
+            if (stair=='upFloor') core.status.hero.flyRange.unshift(floorId);
+            if (stair=='downFloor') core.status.hero.flyRange.push(floorId);
         }
     }
 
@@ -1104,7 +1192,7 @@ core.prototype.changeFloor = function (floorId, stair, heroLoc) {
         // console.log('地图切换到' + floorId);
         core.playSound('floor', 'mp3');
         core.mapChangeAnimate('show', function () {
-            core.setStatus('floor', core.material.maps[floorId].floor);
+            core.statusBar.floor.innerHTML = core.status.maps[floorId].name;
             core.updateStatusBar();
             core.drawMap(floorId, function () {
                 core.hide(core.dom.floorMsgGroup, 10, function () {
@@ -1115,6 +1203,7 @@ core.prototype.changeFloor = function (floorId, stair, heroLoc) {
                 core.setHeroLoc('y', heroLoc.y);
                 core.drawHero(core.getHeroLoc('direction'), core.getHeroLoc('x'), core.getHeroLoc('y'), 'stop');
                 core.updateFg();
+                if (core.isset(callback)) callback();
             });
         });
     }, 50);
@@ -1122,12 +1211,12 @@ core.prototype.changeFloor = function (floorId, stair, heroLoc) {
 
 core.prototype.mapChangeAnimate = function (mode, callback) {
     if (mode == 'show') {
-        core.show(core.dom.floorMsgGroup, 10, function () {
+        core.show(core.dom.floorMsgGroup, 15, function () {
             callback();
         });
     }
     else {
-        core.hide(core.dom.floorMsgGroup, 10, function () {
+        core.hide(core.dom.floorMsgGroup, 20, function () {
             callback();
         });
     }
@@ -1250,13 +1339,12 @@ core.prototype.setFillStyle = function (map, style) {
 }
 
 core.prototype.drawMap = function (mapName, callback) {
-    var mapData = core.material.maps[mapName];
+    var mapData = core.status.maps[mapName];
     var mapBlocks = mapData.blocks;
-    core.temp.floorId = mapName;
-    core.temp.thisMap = mapData;
+    core.status.floorId = mapName;
+    core.status.thisMap = mapData;
     var x, y, blockIcon, blockImage;
     core.clearMap('all');
-    core.clearGetItemAnimate();
     core.rmGlobalAnimate(null, null, true);
     core.enabledAllTrigger();
     for (x = 0; x < 13; x++) {
@@ -1295,21 +1383,9 @@ core.prototype.drawMap = function (mapName, callback) {
             core.canvas.event.drawImage(core.material.images[mapBlocks[b].event.cls], 0, blockIcon.loc * blockIcon.size, blockIcon.size, blockIcon.size, x, y, blockIcon.size, blockIcon.size);
             core.addGlobalAnimate(mapBlocks[b].event.animate, x, y, 'event', blockIcon.loc, blockIcon.size, blockImage);
         }
-        /*
-        if(core.isset(mapBlocks[b].fg)) {
-            blockIcon = core.material.icons[mapBlocks[b].fg.cls][mapBlocks[b].fg.id];
-            blockImage = core.material.images[mapBlocks[b].fg.cls];
-            core.canvas.fg.drawImage(core.material.images[mapBlocks[b].fg.cls], 0, blockIcon.loc * blockIcon.size, blockIcon.size, blockIcon.size, x, y, blockIcon.size, blockIcon.size);
-            core.addGlobalAnimate(mapBlocks[b].fg.animate, x, y, 'fg', blockIcon.loc, blockIcon.size, blockImage);
-        }
-        */
     }
     core.setGlobalAnimate(core.firstData.animateSpeed);
     callback();
-}
-
-core.prototype.setFloorName = function (floorId) {
-    core.dom.floorNameLabel.innerHTML = core.material.maps[floorId].title;
 }
 
 core.prototype.noPassExists = function (x, y) {
@@ -1320,7 +1396,7 @@ core.prototype.noPassExists = function (x, y) {
 }
 
 core.prototype.npcExists = function (x, y) {
-    var blocks = core.temp.thisMap.blocks;
+    var blocks = core.status.thisMap.blocks;
     for (var n = 0; n < blocks.length; n++) {
         if (blocks[n].x == x && blocks[n].y == y && core.isset(blocks[n].event) && blocks[n].event.cls == 'npcs') {
             return true;
@@ -1336,7 +1412,7 @@ core.prototype.terrainExists = function (x, y, id) {
     if (core.stairExists(x, y)) {
         return false;
     }
-    var blocks = core.temp.thisMap.blocks;
+    var blocks = core.status.thisMap.blocks;
     for (var t = 0; t < blocks.length; t++) {
         if (blocks[t].x == x && blocks[t].y == y) {
             for (var map in core.canvas) {
@@ -1350,7 +1426,7 @@ core.prototype.terrainExists = function (x, y, id) {
 }
 
 core.prototype.stairExists = function (x, y) {
-    var blocks = core.temp.thisMap.blocks;
+    var blocks = core.status.thisMap.blocks;
     for (var s = 0; s < blocks.length; s++) {
         if (blocks[s].x == x && blocks[s].y == y && core.isset(blocks[s].event) && blocks[s].event.cls == 'terrains' && core.isset(blocks[s].event.id) && (blocks[s].event.id == 'upFloor' || blocks[s].event.id == 'downFloor')) {
             return true;
@@ -1360,7 +1436,7 @@ core.prototype.stairExists = function (x, y) {
 }
 
 core.prototype.enemyExists = function (x, y, id) {
-    var blocks = core.temp.thisMap.blocks;
+    var blocks = core.status.thisMap.blocks;
     for (var e = 0; e < blocks.length; e++) {
         if (blocks[e].x == x && blocks[e].y == y && core.isset(blocks[e].event) && blocks[e].event.cls == 'enemys' && ((core.isset(id) && core.isset(blocks[e].event.id)) ? blocks[e].event.id == id : true)) {
             return true;
@@ -1373,7 +1449,7 @@ core.prototype.blockExists = function (x, y) {
     if (x > 12 || y > 12 || x < 0 || y < 0) {
         return true;
     }
-    var mapBlocks = core.temp.thisMap.blocks;
+    var mapBlocks = core.status.thisMap.blocks;
     for (var b = 0; b < mapBlocks.length; b++) {
         if (mapBlocks[b].x == x && mapBlocks[b].y == y) {
             return (mapBlocks[b].event && mapBlocks[b].event.noPass) || (mapBlocks[b].bg && mapBlocks[b].bg.noPass);
@@ -1384,7 +1460,7 @@ core.prototype.blockExists = function (x, y) {
 
 core.prototype.removeBlock = function (map, x, y) {
     var map = map.split(',');
-    var mapBlocks = core.temp.thisMap.blocks;
+    var mapBlocks = core.status.thisMap.blocks;
     var blockIcon;
     for (var b = 0; b < mapBlocks.length; b++) {
         if (mapBlocks[b].x == x && mapBlocks[b].y == y) {
@@ -1395,9 +1471,9 @@ core.prototype.removeBlock = function (map, x, y) {
                 }
                 blockIcon = core.material.icons[mapBlocks[b][map[m]].cls][mapBlocks[b][map[m]].id];
                 core.canvas[map[m]].clearRect(x * blockIcon.size, y * blockIcon.size, blockIcon.size, blockIcon.size);
-                // delete core.temp.thisMap.blocks[b][map[m]];
+                // delete core.status.thisMap.blocks[b][map[m]];
             }
-            core.temp.thisMap.blocks.splice(b, 1);
+            core.status.thisMap.blocks.splice(b, 1);
             break;
         }
     }
@@ -1407,7 +1483,7 @@ core.prototype.noPass = function (x, y) {
     if (x > 12 || y > 12 || x < 0 || y < 0) {
         return true;
     }
-    var mapBlocks = core.temp.thisMap.blocks;
+    var mapBlocks = core.status.thisMap.blocks;
     var noPass;
     for (var b = 0; b < mapBlocks.length; b++) {
         if (mapBlocks[b].x == x && mapBlocks[b].y == y) {
@@ -1417,7 +1493,7 @@ core.prototype.noPass = function (x, y) {
 }
 
 core.prototype.trigger = function (x, y) {
-    var mapBlocks = core.temp.thisMap.blocks;
+    var mapBlocks = core.status.thisMap.blocks;
     var noPass;
     for (var b = 0; b < mapBlocks.length; b++) {
         if (mapBlocks[b].x == x && mapBlocks[b].y == y) {
@@ -1447,7 +1523,7 @@ core.prototype.trigger = function (x, y) {
 }
 
 core.prototype.setTrigger = function (x, y, map, triggerName) {
-    var mapBlocks = core.temp.thisMap.blocks;
+    var mapBlocks = core.status.thisMap.blocks;
     for (var b = 0; b < mapBlocks.length; b++) {
         if (mapBlocks[b].x == x && mapBlocks[b].y == y && core.isset(mapBlocks[b][map])) {
             mapBlocks[b][map].trigger = triggerName;
@@ -1456,7 +1532,7 @@ core.prototype.setTrigger = function (x, y, map, triggerName) {
 }
 
 core.prototype.enabledTrigger = function (x, y, map) {
-    var mapBlocks = core.temp.thisMap.blocks;
+    var mapBlocks = core.status.thisMap.blocks;
     for (var b = 0; b < mapBlocks.length; b++) {
         if (mapBlocks[b].x == x && mapBlocks[b].y == y && core.isset(mapBlocks[b][map]) && core.isset(mapBlocks[b][map].trigger)) {
             mapBlocks[b][map].disabledTrigger = false;
@@ -1465,7 +1541,7 @@ core.prototype.enabledTrigger = function (x, y, map) {
 }
 
 core.prototype.enabledAllTrigger = function () {
-    var mapBlocks = core.temp.thisMap.blocks;
+    var mapBlocks = core.status.thisMap.blocks;
     for (var b = 0; b < mapBlocks.length; b++) {
         for (var map in core.canvas) {
             if (core.isset(mapBlocks[b][map]) && core.isset(mapBlocks[b][map].trigger)) {
@@ -1476,7 +1552,7 @@ core.prototype.enabledAllTrigger = function () {
 }
 
 core.prototype.disabledTrigger = function (x, y, map) {
-    var mapBlocks = core.temp.thisMap.blocks;
+    var mapBlocks = core.status.thisMap.blocks;
     for (var b = 0; b < mapBlocks.length; b++) {
         if (mapBlocks[b].x == x && mapBlocks[b].y == y && core.isset(mapBlocks[b][map]) && core.isset(mapBlocks[b][map].trigger)) {
             mapBlocks[b][map].disabledTrigger = true;
@@ -1485,7 +1561,7 @@ core.prototype.disabledTrigger = function (x, y, map) {
 }
 
 core.prototype.rmTrigger = function (x, y, map) {
-    var mapBlocks = core.temp.thisMap.blocks;
+    var mapBlocks = core.status.thisMap.blocks;
     for (var b = 0; b < mapBlocks.length; b++) {
         if (mapBlocks[b].x == x && mapBlocks[b].y == y && core.isset(mapBlocks[b][map]) && core.isset(mapBlocks[b][map].trigger)) {
             delete mapBlocks[b][map].trigger;
@@ -1495,7 +1571,7 @@ core.prototype.rmTrigger = function (x, y, map) {
 
 core.prototype.addGlobalAnimate = function (animateMore, x, y, map, loc, size, image) {
     if (animateMore == 2) {
-        core.temp.twoAnimateObjs.push({
+        core.status.twoAnimateObjs.push({
             'x': x,
             'y': y,
             'map': map,
@@ -1506,7 +1582,7 @@ core.prototype.addGlobalAnimate = function (animateMore, x, y, map, loc, size, i
         });
     }
     else if (animateMore == 4) {
-        core.temp.fourAnimateObjs.push({
+        core.status.fourAnimateObjs.push({
             'x': x,
             'y': y,
             'map': map,
@@ -1520,18 +1596,18 @@ core.prototype.addGlobalAnimate = function (animateMore, x, y, map, loc, size, i
 
 core.prototype.rmGlobalAnimate = function (x, y, all) {
     if (all == true) {
-        core.temp.twoAnimateObjs = [];
-        core.temp.fourAnimateObjs = [];
+        core.status.twoAnimateObjs = [];
+        core.status.fourAnimateObjs = [];
     }
-    for (var t = 0; t < core.temp.twoAnimateObjs.length; t++) {
-        if (core.temp.twoAnimateObjs[t].x == x * core.temp.twoAnimateObjs[t].size && core.temp.twoAnimateObjs[t].y == y * core.temp.twoAnimateObjs[t].size) {
-            core.temp.twoAnimateObjs.splice(t, 1);
+    for (var t = 0; t < core.status.twoAnimateObjs.length; t++) {
+        if (core.status.twoAnimateObjs[t].x == x * core.status.twoAnimateObjs[t].size && core.status.twoAnimateObjs[t].y == y * core.status.twoAnimateObjs[t].size) {
+            core.status.twoAnimateObjs.splice(t, 1);
             return;
         }
     }
-    for (var f = 0; f < core.temp.fourAnimateObjs.length; f++) {
-        if (core.temp.fourAnimateObjs[f].x == x * core.temp.fourAnimateObjs[f].size && core.temp.fourAnimateObjs[f].y == y * core.temp.fourAnimateObjs[f].size) {
-            core.temp.fourAnimateObjs.splice(f, 1);
+    for (var f = 0; f < core.status.fourAnimateObjs.length; f++) {
+        if (core.status.fourAnimateObjs[f].x == x * core.status.fourAnimateObjs[f].size && core.status.fourAnimateObjs[f].y == y * core.status.fourAnimateObjs[f].size) {
+            core.status.fourAnimateObjs.splice(f, 1);
             return;
         }
     }
@@ -1542,31 +1618,31 @@ core.prototype.setGlobalAnimate = function (speed) {
     clearInterval(core.interval.fourAnimate);
     var animateClose = false;
     core.interval.twoAnimate = window.setInterval(function () {
-        for (var a = 0; a < core.temp.twoAnimateObjs.length; a++) {
-            core.temp.twoAnimateObjs[a].status = core.temp.twoAnimateObjs[a].status == 0 ? 1 : 0;
-            core.canvas[core.temp.twoAnimateObjs[a].map].clearRect(core.temp.twoAnimateObjs[a].x, core.temp.twoAnimateObjs[a].y, core.temp.twoAnimateObjs[a].size, core.temp.twoAnimateObjs[a].size);
-            for (var b = 0; b < core.temp.thisMap.blocks.length; b++) {
-                if (core.temp.thisMap.blocks[b].x * 32 == core.temp.twoAnimateObjs[a].x && core.temp.thisMap.blocks[b].y * 32 == core.temp.twoAnimateObjs[a].y && (!core.isset(core.temp.thisMap.blocks[b][core.temp.twoAnimateObjs[a].map]) || core.temp.thisMap.blocks[b][core.temp.twoAnimateObjs[a].map].animate == 0)) {
+        for (var a = 0; a < core.status.twoAnimateObjs.length; a++) {
+            core.status.twoAnimateObjs[a].status = core.status.twoAnimateObjs[a].status == 0 ? 1 : 0;
+            core.canvas[core.status.twoAnimateObjs[a].map].clearRect(core.status.twoAnimateObjs[a].x, core.status.twoAnimateObjs[a].y, core.status.twoAnimateObjs[a].size, core.status.twoAnimateObjs[a].size);
+            for (var b = 0; b < core.status.thisMap.blocks.length; b++) {
+                if (core.status.thisMap.blocks[b].x * 32 == core.status.twoAnimateObjs[a].x && core.status.thisMap.blocks[b].y * 32 == core.status.twoAnimateObjs[a].y && (!core.isset(core.status.thisMap.blocks[b][core.status.twoAnimateObjs[a].map]) || core.status.thisMap.blocks[b][core.status.twoAnimateObjs[a].map].animate == 0)) {
                     animateClose = true;
                 }
             }
             if (!animateClose) {
-                core.canvas[core.temp.twoAnimateObjs[a].map].drawImage(core.temp.twoAnimateObjs[a].image, core.temp.twoAnimateObjs[a].status * 32, core.temp.twoAnimateObjs[a].loc * core.temp.twoAnimateObjs[a].size, core.temp.twoAnimateObjs[a].size, core.temp.twoAnimateObjs[a].size, core.temp.twoAnimateObjs[a].x, core.temp.twoAnimateObjs[a].y, core.temp.twoAnimateObjs[a].size, core.temp.twoAnimateObjs[a].size);
+                core.canvas[core.status.twoAnimateObjs[a].map].drawImage(core.status.twoAnimateObjs[a].image, core.status.twoAnimateObjs[a].status * 32, core.status.twoAnimateObjs[a].loc * core.status.twoAnimateObjs[a].size, core.status.twoAnimateObjs[a].size, core.status.twoAnimateObjs[a].size, core.status.twoAnimateObjs[a].x, core.status.twoAnimateObjs[a].y, core.status.twoAnimateObjs[a].size, core.status.twoAnimateObjs[a].size);
             }
             animateClose = false;
         }
     }, speed);
     core.interval.fourAnimate = window.setInterval(function () {
-        for (var a = 0; a < core.temp.fourAnimateObjs.length; a++) {
-            core.temp.fourAnimateObjs[a].status = (core.temp.fourAnimateObjs[a].status == 0 ? 1 : (core.temp.fourAnimateObjs[a].status == 1 ? 2 : (core.temp.fourAnimateObjs[a].status == 2 ? 3 : 0)));
-            core.canvas[core.temp.fourAnimateObjs[a].map].clearRect(core.temp.fourAnimateObjs[a].x, core.temp.fourAnimateObjs[a].y, core.temp.fourAnimateObjs[a].size, core.temp.fourAnimateObjs[a].size);
-            for (var b = 0; b < core.temp.thisMap.blocks.length; b++) {
-                if (core.temp.thisMap.blocks[b].x * 32 == core.temp.fourAnimateObjs[a].x && core.temp.thisMap.blocks[b].y * 32 == core.temp.fourAnimateObjs[a].y && (!core.isset(core.temp.thisMap.blocks[b][core.temp.fourAnimateObjs[a].map]) || core.temp.thisMap.blocks[b][core.temp.fourAnimateObjs[a].map].animate == 0)) {
+        for (var a = 0; a < core.status.fourAnimateObjs.length; a++) {
+            core.status.fourAnimateObjs[a].status = (core.status.fourAnimateObjs[a].status == 0 ? 1 : (core.status.fourAnimateObjs[a].status == 1 ? 2 : (core.status.fourAnimateObjs[a].status == 2 ? 3 : 0)));
+            core.canvas[core.status.fourAnimateObjs[a].map].clearRect(core.status.fourAnimateObjs[a].x, core.status.fourAnimateObjs[a].y, core.status.fourAnimateObjs[a].size, core.status.fourAnimateObjs[a].size);
+            for (var b = 0; b < core.status.thisMap.blocks.length; b++) {
+                if (core.status.thisMap.blocks[b].x * 32 == core.status.fourAnimateObjs[a].x && core.status.thisMap.blocks[b].y * 32 == core.status.fourAnimateObjs[a].y && (!core.isset(core.status.thisMap.blocks[b][core.status.fourAnimateObjs[a].map]) || core.status.thisMap.blocks[b][core.status.fourAnimateObjs[a].map].animate == 0)) {
                     animateClose = true;
                 }
             }
             if (!animateClose) {
-                core.canvas[core.temp.fourAnimateObjs[a].map].drawImage(core.temp.fourAnimateObjs[a].image, core.temp.fourAnimateObjs[a].status * 32, core.temp.fourAnimateObjs[a].loc * core.temp.fourAnimateObjs[a].size, core.temp.fourAnimateObjs[a].size, core.temp.fourAnimateObjs[a].size, core.temp.fourAnimateObjs[a].x, core.temp.fourAnimateObjs[a].y, core.temp.fourAnimateObjs[a].size, core.temp.fourAnimateObjs[a].size);
+                core.canvas[core.status.fourAnimateObjs[a].map].drawImage(core.status.fourAnimateObjs[a].image, core.status.fourAnimateObjs[a].status * 32, core.status.fourAnimateObjs[a].loc * core.status.fourAnimateObjs[a].size, core.status.fourAnimateObjs[a].size, core.status.fourAnimateObjs[a].size, core.status.fourAnimateObjs[a].x, core.status.fourAnimateObjs[a].y, core.status.fourAnimateObjs[a].size, core.status.fourAnimateObjs[a].size);
             }
             animateClose = false;
         }
@@ -1575,7 +1651,7 @@ core.prototype.setGlobalAnimate = function (speed) {
 
 core.prototype.setBoxAnimate = function (speed) {
     clearInterval(core.interval.boxAnimate);
-    if (core.temp.boxAnimateObjs.length > 0) {
+    if (core.status.boxAnimateObjs.length > 0) {
         var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
         core.drawBoxAnimate(background);
         core.interval.boxAnimate = setInterval(function () {
@@ -1585,8 +1661,8 @@ core.prototype.setBoxAnimate = function (speed) {
 }
 
 core.prototype.drawBoxAnimate = function (background) {
-    for (var a = 0; a < core.temp.boxAnimateObjs.length; a++) {
-        var obj = core.temp.boxAnimateObjs[a];
+    for (var a = 0; a < core.status.boxAnimateObjs.length; a++) {
+        var obj = core.status.boxAnimateObjs[a];
         obj.status = obj.status == 0 ? 1 : 0;
         core.clearMap('ui', obj.bgx, obj.bgy, obj.bgsize, obj.bgsize);
         core.fillRect('ui', obj.bgx, obj.bgy, obj.bgsize, obj.bgsize, background);
@@ -1597,24 +1673,24 @@ core.prototype.drawBoxAnimate = function (background) {
 
 core.prototype.setHeroLoc = function (itemName, itemVal) {
     if (itemVal == '++') {
-        core.temp.heroLoc[itemName]++;
+        core.status.hero.loc[itemName]++;
         return;
     }
     else if (itemVal == '--') {
-        core.temp.heroLoc[itemName]--;
+        core.status.hero.loc[itemName]--;
         return;
     }
-    core.temp.heroLoc[itemName] = itemVal;
+    core.status.hero.loc[itemName] = itemVal;
 }
 
 core.prototype.getHeroLoc = function (itemName) {
-    return core.temp.heroLoc[itemName];
+    return core.status.hero.loc[itemName];
 }
 
 core.prototype.updateFg = function () {
-    if (!core.isset(core.temp.thisMap) || !core.isset(core.temp.thisMap.blocks)) return;
+    if (!core.isset(core.status.thisMap) || !core.isset(core.status.thisMap.blocks)) return;
     // 更新显伤
-    var mapBlocks = core.temp.thisMap.blocks;
+    var mapBlocks = core.status.thisMap.blocks;
     core.clearMap('fg', 0, 0, 416, 416);
     // 没有怪物手册
     if (!core.hasItem('book')) return;
@@ -1658,7 +1734,7 @@ core.prototype.updateFg = function () {
  */
 core.prototype.itemCount = function (itemId) {
     var itemCls = core.material.items[itemId].cls;
-    return core.isset(core.temp.itemList[itemCls]) && core.isset(core.temp.itemList[itemCls][itemId]) ? core.temp.itemList[itemCls][itemId] : 0;
+    return core.isset(core.status.hero.items[itemCls][itemId]) ? core.status.hero.items[itemCls][itemId] : 0;
 }
 
 core.prototype.hasItem = function (itemId) {
@@ -1668,16 +1744,16 @@ core.prototype.hasItem = function (itemId) {
 core.prototype.setItem = function (itemId, itemNum) {
     var itemCls = core.material.items[itemId].cls;
     if (itemCls == 'item') return;
-    if (!core.isset(core.temp.itemList[itemCls])) {
-        core.temp.itemList[itemCls] = {};
+    if (!core.isset(core.status.hero.items[itemCls])) {
+        core.status.hero.items[itemCls] = {};
     }
-    core.temp.itemList[itemCls][itemId] = itemNum;
+    core.status.hero.items[itemCls][itemId] = itemNum;
 }
 
 core.prototype.useItem = function (itemId) {
     if (!core.hasItem(itemId)) return;
     var itemCls = core.material.items[itemId].cls;
-    core.temp.itemList[itemCls][itemId]--;
+    core.status.hero.items[itemCls][itemId]--;
     core.updateStatusBar();
 }
 
@@ -1685,24 +1761,24 @@ core.prototype.addItem = function (itemId, itemNum) {
     var itemData = core.material.items[itemId];
     var itemCls = itemData.cls;
     if (itemCls == 'item') return;
-    if (!core.isset(core.temp.itemList[itemCls])) {
-        core.temp.itemList[itemCls] = {};
-        core.temp.itemList[itemCls][itemId] = 0;
+    if (!core.isset(core.status.hero.items[itemCls])) {
+        core.status.hero.items[itemCls] = {};
+        core.status.hero.items[itemCls][itemId] = 0;
     }
-    else if (!core.isset(core.temp.itemList[itemCls][itemId])) {
-        core.temp.itemList[itemCls][itemId] = 0;
+    else if (!core.isset(core.status.hero.items[itemCls][itemId])) {
+        core.status.hero.items[itemCls][itemId] = 0;
     }
-    core.temp.itemList[itemCls][itemId] += itemNum;
+    core.status.hero.items[itemCls][itemId] += itemNum;
 }
 
 /*
 core.prototype.removeBlock = function(itemX, itemY) {
-   var mapBlocks = core.temp.thisMap.blocks;
+   var mapBlocks = core.status.thisMap.blocks;
    for(var b = 0;b < mapBlocks.length;b++) {
        if(mapBlocks[b].x == itemX && mapBlocks[b].y == itemY) {
            // delete mapBlocks[b].event;
            // mapBlocks[b]
-           core.temp.thisMap.blocks.splice(b,1);
+           core.status.thisMap.blocks.splice(b,1);
            break;
        }
    }
@@ -1710,7 +1786,7 @@ core.prototype.removeBlock = function(itemX, itemY) {
 */
 
 core.prototype.getItemEffect = function (itemId, itemNum) {
-    var currfloor = parseInt(core.status.hero.floor);
+    var currfloor = parseInt(core.status.thisMap.name);
     var hard = parseInt((currfloor + 4) / 5);
     var itemCls = core.material.items[itemId].cls;
 
@@ -1772,16 +1848,10 @@ core.prototype.getItem = function (itemId, itemNum, itemX, itemY) {
     core.updateStatusBar();
 }
 
-core.prototype.clearGetItemAnimate = function () {
-    for (var a = 0; a < core.interval.getItemAnimate.length; a++) {
-        clearInterval(core.interval.getItemAnimate[a]);
-    }
-}
-
 core.prototype.drawTip = function (text, type, itemIcon) {
     type = type || 'normal';
     var textX, textY, width, height, hide = false, opacityVal = 0;
-    clearInterval(core.interval.getItemTipAnimate);
+    clearInterval(core.interval.tipAnimate);
     core.setFont('data', "16px Arial");
     core.saveCanvas('data');
     core.setOpacity('data', 0);
@@ -1801,7 +1871,7 @@ core.prototype.drawTip = function (text, type, itemIcon) {
         core.loadCanvas('data');
         return;
     }
-    core.interval.getItemTipAnimate = window.setInterval(function () {
+    core.interval.tipAnimate = window.setInterval(function () {
         if (hide) {
             opacityVal -= 0.1;
         }
@@ -1820,7 +1890,7 @@ core.prototype.drawTip = function (text, type, itemIcon) {
                 core.loadCanvas('data');
                 core.clearMap('data', 5, 5, 400, height);
                 core.setOpacity('data', 1);
-                clearInterval(core.interval.getItemTipAnimate);
+                clearInterval(core.interval.tipAnimate);
                 return;
             }
             else {
@@ -1836,26 +1906,6 @@ core.prototype.drawTip = function (text, type, itemIcon) {
         }
     }, 30);
 }
-/*
-core.prototype.getItemAnimate = function(itemId, itemNum, itemX, itemY) {
-	var top = 0;
-	var intervalIndex = core.interval.getItemAnimate.length;
-	var itemIcon = core.material.icons.items[itemId];
-	itemX = itemX * itemIcon.size;
-	itemY = itemY * itemIcon.size;
-	core.drawTip('获得 ' + core.material.items[itemId].name + ' x ' + itemNum, 'image', itemIcon);
-	core.interval.getItemAnimate[core.interval.getItemAnimate.length] = window.setInterval(function() {
-		top += 3;
-		core.canvas.event.clearRect(itemX, itemY, 32, 32);
-		core.canvas.event.drawImage(core.material.images.items, 0, itemIcon.loc * itemIcon.size - top, itemIcon.size, itemIcon.size, itemX, itemY, itemIcon.size, itemIcon.size);
-		core.canvas.event.clearRect(itemX, itemY + 30, 32, 2);
-		if(top >= 30) {
-			top = 0;
-			clearInterval(core.interval.getItemAnimate[intervalIndex]);
-		}
-	}, 30);
-}
-*/
 
 /**
  * 物品处理 end
@@ -1869,12 +1919,83 @@ core.prototype.visitNpc = function (npcevent) {
  * 系统机制 start
  */
 
+core.prototype.setLocalStorage = function(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+}
+core.prototype.getLocalStorage = function(key, defaultValue) {
+    var value = localStorage.getItem(key);
+    if (core.isset(value)) return JSON.parse(value);
+    return defaultValue;
+}
+
+core.prototype.clone = function (data) {
+    if (!core.isset(data)) return data;
+    // date
+    if (data instanceof Date) {
+        var copy=new Date();
+        copy.setTime(data.getTime());
+        return copy;
+    }
+    // array
+    if (data instanceof Array) {
+        var copy=[];
+        for (var i=0;i<data.length;i++) {
+            copy.push(core.clone(data[i]));
+        }
+        return copy;
+    }
+    // object
+    if (data instanceof Object) {
+        var copy={};
+        for (var i in data) {
+            if (data.hasOwnProperty(i))
+                copy[i]=core.clone(data[i]);
+        }
+        return copy;
+    }
+    return data;
+}
+
+core.prototype.formatDate = function(date) {
+    if (!core.isset(date)) {
+        return "";
+    }
+    return date.getFullYear()+"-"+core.setTwoDigits(date.getMonth())+"-"+core.setTwoDigits(date.getDay())+" "
+        +core.setTwoDigits(date.getHours())+":"+core.setTwoDigits(date.getMinutes())+":"+core.setTwoDigits(date.getSeconds());
+}
+
+core.prototype.setTwoDigits = function (x) {
+    return x<10?"0"+x:x;
+}
+
+core.prototype.win = function() {
+    core.drawTip("你赢了！");
+}
+
 core.prototype.upload = function () {
 
 }
 
-core.prototype.showConfirmBox = function (text, yesCallback, noCallback) {
+// 作弊
+core.prototype.cheat = function() {
+    core.setStatus('hp', 10000);
+    core.setStatus('atk', 1000);
+    core.setStatus('def', 1000);
+    core.setStatus('mdef', 1000);
+    core.setStatus('money', 1000);
+    core.setItem('yellowKey', 50);
+    core.setItem('blueKey', 50);
+    core.setItem('redKey', 50);
+    core.setItem('book', 1);
+    core.setItem('fly', 1);
+    for (var i in core.status.maps)
+        if (core.status.maps[i].canFlyTo && core.status.hero.flyRange.indexOf(i)<0)
+            core.status.hero.flyRange.push(i);
+    core.updateStatusBar();
+    core.drawTip("作弊成功");
+}
 
+core.prototype.showConfirmBox = function (text, yesCallback, noCallback) {
     core.status.event.id = 'confirmBox';
     core.status.event.data = {'yes': yesCallback, 'no': noCallback};
 
@@ -1914,7 +2035,7 @@ core.prototype.checkStatus = function (name, need, item, clearData) {
     }
 
     core.lockControl();
-    core.temp.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
+    core.status.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
     core.status.event.id = name;
     return true;
 }
@@ -1930,7 +2051,7 @@ core.prototype.useFly = function (need) {
     if (!core.checkStatus('fly', need, true))
         return;
 
-    var index=core.status.flyRange.indexOf(core.temp.floorId);
+    var index=core.status.hero.flyRange.indexOf(core.status.floorId);
     if (index<0) {
         core.drawTip("楼层传送器好像失效了");
         core.unLockControl();
@@ -1950,21 +2071,71 @@ core.prototype.openToolbox = function (need) {
     core.drawTip("工具箱还未完成");
 }
 
-core.prototype.save = function (need) {
-    /*
+core.prototype.save = function(need) {
     if (!core.checkStatus('save', need))
         return;
-        */
-    core.drawTip("存档功能还未完成");
+    core.drawSLPanel(core.status.savePage);
 }
 
 core.prototype.load = function (need) {
-    /*
     if (!core.checkStatus('load', need))
         return;
-        */
+    core.drawSLPanel(core.status.savePage);
+}
 
-    core.drawTip("读档功能还未完成");
+core.prototype.doSL = function (id, type) {
+    if (type=='save') {
+        core.saveData("save"+id);
+        core.closePanel();
+        core.drawTip('存档成功！');
+        core.setLocalStorage('savePage', core.status.savePage);
+        return;
+    }
+    else if (type=='load') {
+        var data = core.getLocalStorage("save"+id, null);
+        if (!core.isset(data)) {
+            core.drawTip("无效的存档");
+            return;
+        }
+        core.closePanel();
+        core.loadData(data, function() {
+            core.setLocalStorage('savePage', core.status.savePage);
+            core.drawTip("读档成功");
+        });
+        return;
+    }
+}
+
+core.prototype.saveData = function(dataId) {
+    var data = {
+        'floorId': core.status.floorId,
+        'hero': core.clone(core.status.hero),
+        'hard': core.status.hard,
+        'maps': core.maps.save(core.status.maps),
+        'npcs': {},
+        'shops': {},
+        'version': core.firstData.version,
+        'time': new Date().getTime()
+    };
+    // set shop times
+    for (var shop in core.status.shops) {
+        data.shops[shop]={
+            'times': core.status.shops[shop].times,
+            'visited': core.status.shops[shop].visited
+        }
+    }
+    core.setLocalStorage(dataId, data);
+    // console.log(core.getLocalStorage(dataId));
+}
+
+core.prototype.loadData = function (data, callback) {
+    core.resetStatus(data.hero, data.hard, data.floorId,
+        core.maps.load(data.maps));
+
+    core.changeFloor(data.floorId, null, data.hero.loc, function() {
+        core.setHeroMoveTriggerInterval();
+        if (core.isset(callback)) callback();
+    });
 }
 
 core.prototype.openSettings = function (need) {
@@ -1981,14 +2152,13 @@ core.prototype.openSettings = function (need) {
 
     // 名称
     core.canvas.ui.textAlign = "center";
-    core.fillText('ui', "音乐： " + (core.status.soundStatus ? "[ON]" : "[OFF]"), 208, top + 56, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "音乐： " + (core.musicStatus.soundStatus ? "[ON]" : "[OFF]"), 208, top + 56, "#FFFFFF", "bold 17px Verdana");
     core.fillText('ui', "快捷商店", 208, top + 88, "#FFFFFF", "bold 17px Verdana");
     core.fillText('ui', "保存游戏", 208, top + 120, "#FFFFFF", "bold 17px Verdana");
     core.fillText('ui', "读取游戏", 208, top + 152, "#FFFFFF", "bold 17px Verdana");
     core.fillText('ui', "我要咸鱼", 208, top + 184, "#FFFFFF", "bold 17px Verdana");
     core.fillText('ui', "重新开始", 208, top + 216, "#FFFFFF", "bold 17px Verdana");
     core.fillText('ui', "返回游戏", 208, top + 248, "#FFFFFF", "bold 17px Verdana");
-
 
 }
 
@@ -2035,7 +2205,7 @@ core.prototype.openShop = function (id) {
 
     var times = shop.times, need = eval(shop.need);
 
-    clearInterval(core.interval.getItemTipAnimate);
+    clearInterval(core.interval.tipAnimate);
     core.clearMap('data', 0, 0, 416, 416);
     core.setOpacity('data', 1);
 
@@ -2053,8 +2223,8 @@ core.prototype.openShop = function (id) {
 
     // 动画
     core.strokeRect('ui', left + 15 - 1, top + 30 - 1, 34, 34, '#DDDDDD', 2);
-    core.temp.boxAnimateObjs = [];
-    core.temp.boxAnimateObjs.push({
+    core.status.boxAnimateObjs = [];
+    core.status.boxAnimateObjs.push({
         'bgx': left + 15, 'bgy': top + 30, 'bgsize': 32,
         'image': core.material.images.npcs,
         'x': left + 15, 'y': top + 30, 'icon': core.material.icons.npcs[shop.icon]
@@ -2077,7 +2247,7 @@ core.prototype.openShop = function (id) {
 }
 
 core.prototype.closePanel = function (clearData) {
-    core.temp.boxAnimateObjs = [];
+    core.status.boxAnimateObjs = [];
     core.setBoxAnimate(core.firstData.animateSpeed);
     core.clearMap('ui', 0, 0, 416, 416);
     core.setAlpha('ui', 1.0);
@@ -2091,16 +2261,20 @@ core.prototype.closePanel = function (clearData) {
 core.prototype.getCurrentEnemys = function () {
     var enemys = [];
     var used = {};
-    var mapBlocks = core.temp.thisMap.blocks;
+    var mapBlocks = core.status.thisMap.blocks;
     for (var b = 0; b < mapBlocks.length; b++) {
         if (core.isset(mapBlocks[b].event) && mapBlocks[b].event.cls == 'enemys') {
             var monsterId = mapBlocks[b].event.id;
             if (core.isset(used[monsterId])) continue;
 
             var monster = core.material.enemys[monsterId];
+            var mon_def = monster.def;
+            // 坚固
+            if (monster.special==3 && mon_def<core.status.hero.atk-1)
+                mon_def = core.status.hero.atk-1;
 
             enemys.push({
-                'id': monsterId, 'name': monster.name, 'hp': monster.hp, 'atk': monster.atk, 'def': monster.def,
+                'id': monsterId, 'name': monster.name, 'hp': monster.hp, 'atk': monster.atk, 'def': mon_def,
                 'money': monster.money, 'special': core.enemys.getSpecialText(monsterId),
                 'damage': core.getDamage(monsterId), 'critical': core.getCritical(monsterId),
                 'criticalDamage': core.getCriticalDamage(monsterId), 'defDamage': core.getDefDamage(monsterId)
@@ -2124,7 +2298,7 @@ core.prototype.drawEnemyBook = function (page) {
     var enemys = core.getCurrentEnemys();
     var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
 
-    clearInterval(core.interval.getItemTipAnimate);
+    clearInterval(core.interval.tipAnimate);
     core.clearMap('data', 0, 0, 416, 416);
     core.setOpacity('data', 1);
 
@@ -2154,14 +2328,14 @@ core.prototype.drawEnemyBook = function (page) {
     var start = (page - 1) * perpage, end = Math.min(page * perpage, enemys.length);
 
     enemys = enemys.slice(start, end);
-    core.temp.boxAnimateObjs = [];
+    core.status.boxAnimateObjs = [];
     for (var i = 0; i < enemys.length; i++) {
         // 边框
         var enemy = enemys[i];
         core.strokeRect('ui', 22, 62 * i + 22, 42, 42, '#DDDDDD', 2);
 
         // 怪物
-        core.temp.boxAnimateObjs.push({
+        core.status.boxAnimateObjs.push({
             'bgx': 22, 'bgy': 62 * i + 22, 'bgsize': 42,
             'image': core.material.images.enemys,
             'x': 27, 'y': 62 * i + 27, 'icon': core.material.icons.enemys[enemy.id]
@@ -2171,14 +2345,14 @@ core.prototype.drawEnemyBook = function (page) {
         core.canvas.ui.textAlign = "center";
         core.fillText('ui', enemy.name, 115, 62 * i + 47, '#DDDDDD', 'bold 17px Verdana');
         core.canvas.ui.textAlign = "left";
-        core.fillText('ui', '生命', 165, 62 * i + 35, '#DDDDDD', '13px Verdana');
-        core.fillText('ui', enemy.hp, 195, 62 * i + 35, '#DDDDDD', 'bold 13px Verdana');
-        core.fillText('ui', '攻击', 255, 62 * i + 35, '#DDDDDD', '13px Verdana');
-        core.fillText('ui', enemy.atk, 285, 62 * i + 35, '#DDDDDD', 'bold 13px Verdana');
-        core.fillText('ui', '防御', 335, 62 * i + 35, '#DDDDDD', '13px Verdana');
-        core.fillText('ui', enemy.def, 365, 62 * i + 35, '#DDDDDD', 'bold 13px Verdana');
-        core.fillText('ui', '金币', 165, 62 * i + 53, '#DDDDDD', '13px Verdana');
-        core.fillText('ui', enemy.money, 195, 62 * i + 53, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '生命', 165, 62 * i + 32, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.hp, 195, 62 * i + 32, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '攻击', 255, 62 * i + 32, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.atk, 285, 62 * i + 32, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '防御', 335, 62 * i + 32, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.def, 365, 62 * i + 32, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '金币', 165, 62 * i + 50, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.money, 195, 62 * i + 50, '#DDDDDD', 'bold 13px Verdana');
 
         var damage = enemy.damage;
         var color = '#FFFF00';
@@ -2186,7 +2360,7 @@ core.prototype.drawEnemyBook = function (page) {
         if (damage == 0) color = '#00FF00';
         if (damage == 999999999) damage = '无法战斗';
         var length = core.canvas.ui.measureText(damage).width;
-        core.fillText('ui', damage, 326 - length / 2, 62 * i + 53, color, 'bold 13px Verdana');
+        core.fillText('ui', damage, 326 - length / 2, 62 * i + 50, color, 'bold 13px Verdana');
 
         // 属性
         if (enemy.special != '') {
@@ -2198,12 +2372,12 @@ core.prototype.drawEnemyBook = function (page) {
             core.fillText('data', enemy.special, 64 - 2 - length, 62 * i + 59, '#FF6A6A', 'bold 12px Verdana')
         }
 
-        core.fillText('ui', '临界', 165, 62 * i + 71, '#DDDDDD', '13px Verdana');
-        core.fillText('ui', enemy.critical, 195, 62 * i + 71, '#DDDDDD', 'bold 13px Verdana');
-        core.fillText('ui', '减伤', 255, 62 * i + 71, '#DDDDDD', '13px Verdana');
-        core.fillText('ui', enemy.criticalDamage, 285, 62 * i + 71, '#DDDDDD', 'bold 13px Verdana');
-        core.fillText('ui', '1防', 335, 62 * i + 71, '#DDDDDD', '13px Verdana');
-        core.fillText('ui', enemy.defDamage, 365, 62 * i + 71, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '临界', 165, 62 * i + 68, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.critical, 195, 62 * i + 68, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '减伤', 255, 62 * i + 68, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.criticalDamage, 285, 62 * i + 68, '#DDDDDD', 'bold 13px Verdana');
+        core.fillText('ui', '1防', 335, 62 * i + 68, '#DDDDDD', '13px Verdana');
+        core.fillText('ui', enemy.defDamage, 365, 62 * i + 68, '#DDDDDD', 'bold 13px Verdana');
 
     }
     core.setBoxAnimate(core.firstData.animateSpeed);
@@ -2215,44 +2389,96 @@ core.prototype.drawPagination = function (page, totalPage) {
     core.setFont('ui', 'bold 15px Verdana');
     core.setFillStyle('ui', '#DDDDDD');
 
-    var textLength = core.canvas.ui.measureText("上一页").width;
     var length = core.canvas.ui.measureText(page + " / " + page).width;
 
-    if (page > 1)
-        core.fillText('ui', '上一页', 208 - 60 - textLength, 403);
+    core.canvas.ui.textAlign = 'left';
     core.fillText('ui', page + " / " + totalPage, (416 - length) / 2, 403);
+
+    core.canvas.ui.textAlign = 'center';
+    if (page > 1)
+        core.fillText('ui', '上一页', 208 - 80, 403);
     if (page < totalPage)
-        core.fillText('ui', '下一页', 208 + 60, 403);
+        core.fillText('ui', '下一页', 208 + 80, 403);
+
+    // 退出
+    core.fillText('ui', '返回游戏', 370, 403);
+
 }
 
 core.prototype.drawFly = function(page) {
 
     if (page<0) page=0;
-    if (page>=core.status.flyRange.length) page=core.status.flyRange.length-1;
+    if (page>=core.status.hero.flyRange.length) page=core.status.hero.flyRange.length-1;
     core.status.event.data = page;
 
-    var floorId = core.status.flyRange[page];
-    var title = core.material.maps[floorId].title;
+    var floorId = core.status.hero.flyRange[page];
+    var title = core.status.maps[floorId].title;
 
     core.clearMap('ui', 0, 0, 416, 416);
-    core.setAlpha('ui', 0.7);
+    core.setAlpha('ui', 0.85);
     core.fillRect('ui', 0, 0, 416, 416, '#000000');
     core.setAlpha('ui', 1);
     core.canvas.ui.textAlign = 'center';
     core.fillText('ui', '楼层跳跃', 208, 60, '#FFFFFF', "bold 28px Verdana");
     core.fillText('ui', '返回游戏', 208, 403, '#FFFFFF', "bold 15px Verdana")
     core.fillText('ui', title, 356, 247, '#FFFFFF', "bold 19px Verdana");
-    if (page>0)
+    if (page<core.status.hero.flyRange.length-1)
         core.fillText('ui', '▲', 356, 247-64, '#FFFFFF', "17px Verdana");
-    if (page<core.status.flyRange.length-1)
+    if (page>0)
         core.fillText('ui', '▼', 356, 247+64, '#FFFFFF', "17px Verdana");
     core.strokeRect('ui', 20, 100, 273, 273, '#FFFFFF', 2);
-    core.drawThumbnail('ui', floorId, 20, 100, 273);
+    core.drawThumbnail('ui', core.status.maps[floorId].blocks, 20, 100, 273);
 }
 
-core.prototype.drawThumbnail = function(canvas, floorId, x, y, size) {
+core.prototype.drawSLPanel = function(page) {
+
+    if (page<0) page=0;
+    if (page>=50) page=49;
+    core.status.event.data = page;
+    core.status.savePage = page;
+
+    core.clearMap('ui', 0, 0, 416, 416);
+    core.setAlpha('ui', 0.85);
+    core.fillRect('ui', 0, 0, 416, 416, '#000000');
+    core.setAlpha('ui', 1);
+    core.canvas.ui.textAlign = 'center';
+
+    var u=416/6, size=117;
+
+    for (var i=0;i<6;i++) {
+        var id=6*page+i+1;
+        var data=core.getLocalStorage("save"+id,null);
+
+        if (i<3) {
+            core.fillText('ui', '存档'+id, (2*i+1)*u, 35, '#FFFFFF', "bold 17px Verdana");
+            core.strokeRect('ui', (2*i+1)*u-size/2, 50, size, size, '#FFFFFF', 2);
+            if (core.isset(data) && core.isset(data.floorId)) {
+                core.drawThumbnail('ui', core.maps.load(data.maps[data.floorId]).blocks, (2*i+1)*u-size/2, 50, size, data.hero.loc);
+                core.fillText('ui', core.formatDate(new Date(data.time)), (2*i+1)*u, 65+size, '#FFFFFF', '10px Verdana');
+            }
+            else {
+                core.fillRect('ui', (2*i+1)*u-size/2, 50, size, size, '#333333', 2);
+                core.fillText('ui', '空', (2*i+1)*u, 117, '#FFFFFF', 'bold 30px Verdana');
+            }
+        }
+        else {
+            core.fillText('ui', '存档'+id, (2*i-5)*u, 230, '#FFFFFF', "bold 17px Verdana");
+            core.strokeRect('ui', (2*i-5)*u-size/2, 245, size, size, '#FFFFFF', 2);
+            if (core.isset(data) && core.isset(data.floorId)) {
+                core.drawThumbnail('ui', core.maps.load(data.maps[data.floorId]).blocks, (2*i-5)*u-size/2, 245, size, data.hero.loc);
+                core.fillText('ui', core.formatDate(new Date(data.time)), (2*i-5)*u, 260+size, '#FFFFFF', '10px Verdana');
+            }
+            else {
+                core.fillRect('ui', (2*i-5)*u-size/2, 245, size, size, '#333333', 2);
+                core.fillText('ui', '空', (2*i-5)*u, 245+70, '#FFFFFF', 'bold 30px Verdana');
+            }
+        }
+    }
+    core.drawPagination(page+1, 50);
+}
+
+core.prototype.drawThumbnail = function(canvas, blocks, x, y, size, heroLoc) {
     core.clearMap(canvas, x, y, size, size);
-    var blocks = core.material.maps[floorId].blocks;
     var persize = size/13;
     for (var i=0;i<13;i++) {
         for (var j=0;j<13;j++) {
@@ -2271,26 +2497,10 @@ core.prototype.drawThumbnail = function(canvas, floorId, x, y, size) {
             core.canvas[canvas].drawImage(blockImage, 0, blockIcon.loc * blockIcon.size, blockIcon.size, blockIcon.size, x + i * persize, y + j * persize, persize, persize);
         }
     }
-
-}
-
-core.prototype.setFirstItem = function () {
-    core.setStatus('hp', core.firstData.hero.hp);
-    core.setStatus('atk', core.firstData.hero.atk);
-    core.setStatus('def', core.firstData.hero.def);
-    core.setStatus('mdef', core.firstData.hero.mdef);
-    core.setStatus('money', core.firstData.hero.money);
-    for (var itemClass in core.firstData.hero.items) {
-        if (!core.isset(core.temp.itemList[itemClass])) {
-            core.temp.itemList[itemClass] = {};
-        }
-        for (var itemName in core.firstData.hero.items[itemClass]) {
-            if (!core.isset(core.temp.itemList[itemClass][itemName])) {
-                core.temp.itemList[itemClass][itemName] = core.firstData.hero.items[itemClass][itemName];
-            }
-        }
+    if (core.isset(heroLoc)) {
+        var heroIcon = core.material.icons.heros[core.status.hero.id][heroLoc.direction];
+        core.canvas[canvas].drawImage(core.material.images.heros, heroIcon.loc['stop'] * heroIcon.size, heroIcon.loc.iconLoc * heroIcon.size, heroIcon.size, heroIcon.size, x+persize*heroLoc.x, y+persize*heroLoc.y, persize, persize);
     }
-    core.status.flyRange.push(core.firstData.floor);
 }
 
 core.prototype.setStatus = function (statusName, statusVal) {
@@ -2306,15 +2516,14 @@ core.prototype.getStatus = function (statusName) {
 }
 
 core.prototype.updateStatusBar = function () {
-    var statusList = ['floor', 'hp', 'atk', 'def', 'mdef', 'money'];
+    // core.statusBar.floor.innerHTML = core.maps.maps[core.status.floorId].name;
+    var statusList = ['hp', 'atk', 'def', 'mdef', 'money'];
     statusList.forEach(function (item) {
         core.statusBar[item].innerHTML = core.getStatus(item);
     });
     var keys = ['yellowKey', 'blueKey', 'redKey'];
     keys.forEach(function (key) {
-        var num = core.temp.itemList.keys[key];
-        if (num < 10) num = "0" + num;
-        core.statusBar[key].innerHTML = num;
+        core.statusBar[key].innerHTML = core.setTwoDigits(core.status.hero.items.keys[key]);
     })
     core.statusBar.hard.innerHTML = "Hard: " + core.status.hard;
     if (core.hasItem('book')) {
@@ -2378,36 +2587,36 @@ core.prototype.getClickLoc = function (x, y) {
     return {'x': x - left, 'y': y - top, 'size': size};
 }
 
-core.prototype.soundPlayed = function (soundName, soundType) {
-    return core.material.sounds[soundType][soundName].paused;
-}
-
 core.prototype.playSound = function (soundName, soundType) {
-    if (!core.status.soundStatus) {
+    if (!core.musicStatus.soundStatus) {
         return;
     }
     /*
-    if (core.isset(core.temp.playedSound)) {
-        // core.temp.playedSound.pause();
+    if (core.isset(core.musicStatus.playedSound)) {
+        // core.musicStatus.playedSound.pause();
     }
     */
-    core.temp.playedSound = core.material.sounds[soundType][soundName];
-    core.temp.playedSound.play();
+    core.musicStatus.playedSound = core.material.sounds[soundType][soundName];
+    core.musicStatus.playedSound.play();
 }
 
 core.prototype.playBgm = function (bgmName, bgmType) {
-    if (!core.status.soundStatus) {
+    /*
+    if (!core.musicStatus.soundStatus) {
         return;
     }
-    if (core.isset(core.temp.playedBgm)) {
-        core.temp.playedBgm.pause();
+    */
+    if (core.musicStatus.isIOS) return;
+    if (core.isset(core.musicStatus.playedBgm)) {
+        core.musicStatus.playedBgm.pause();
     }
-    core.temp.playedBgm = core.material.sounds[bgmType][bgmName];
-    core.temp.playedBgm.play();
+    core.musicStatus.playedBgm = core.material.sounds[bgmType][bgmName];
+    if (core.musicStatus.soundStatus)
+        core.musicStatus.playedBgm.play();
 }
 
 core.prototype.changeSoundStatus = function () {
-    if (core.status.soundStatus) {
+    if (core.musicStatus.soundStatus) {
         main.core.disabledSound();
     }
     else {
@@ -2416,13 +2625,15 @@ core.prototype.changeSoundStatus = function () {
 }
 
 core.prototype.enabledSound = function () {
-    core.temp.playedBgm.play();
-    core.status.soundStatus = true;
+    core.musicStatus.playedBgm.play();
+    core.musicStatus.soundStatus = true;
+    core.setLocalStorage('soundStatus', true);
 }
 
 core.prototype.disabledSound = function () {
-    core.temp.playedBgm.pause();
-    core.status.soundStatus = false;
+    core.musicStatus.playedBgm.pause();
+    core.musicStatus.soundStatus = false;
+    core.setLocalStorage('soundStatus', false);
 }
 
 core.prototype.show = function (obj, speed, callback) {
@@ -2582,8 +2793,8 @@ core.prototype.resize = function (width, height) {
         core.statusBar.image.settings.style.top = 86 * scale + "px";
         core.statusBar.image.settings.style.left = 238 * scale + "px";
         // hard
-        core.statusBar.hard.style.top = 94 * scale + "px";
-        core.statusBar.hard.style.left = 300 * scale + "px";
+        core.statusBar.hard.style.top = 90 * scale + "px";
+        core.statusBar.hard.style.left = 292 * scale + "px";
 
         core.status.screenMode = 'adaptive';
         console.log('已调整为自适应屏');
@@ -2693,8 +2904,8 @@ core.prototype.resize = function (width, height) {
         core.statusBar.image.settings.style.top = "86px";
         core.statusBar.image.settings.style.left = "238px";
         // hard
-        core.statusBar.hard.style.top = "94px";
-        core.statusBar.hard.style.left = "300px";
+        core.statusBar.hard.style.top = "90px";
+        core.statusBar.hard.style.left = "292px";
 
         core.status.screenMode = 'vertical';
         console.log('已调整为竖屏');

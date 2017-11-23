@@ -72,9 +72,10 @@ function main() {
     console.log('存储canvas变量已声明');
     this.firstData = {
         'version': 'Ver 1.0.0 (Beta)',
-        'floor': 'MT0',
+        'floorId': 'MT0',
         'hero': {
             'id': 'hero1',
+            'name': '勇士',
             'hp': 1000,
             'atk': 10,
             'def': 10,
@@ -89,8 +90,10 @@ function main() {
                 'constants': {},
                 'tools': {}
             },
+            'flyRange': ['MT0'],
             'loc': {'direction': 'down', 'x': 6, 'y': 12},
         },
+        'hard': 10,
         'shops': {
             'shop1': {
                 'id': 'shop1', 'title': '贪婪之神', 'name': '3楼商店', 'icon': 'shop1',
@@ -111,6 +114,7 @@ function main() {
                 ]
             },
         },
+        'npcs': {},
         'animateSpeed': 500
     }
     console.log('初始数据已声明');
@@ -180,9 +184,7 @@ var main = new main();
 main.init();
 
 window.onresize = function () {
-    console.log('触发了resize事件');
     main.core.resize(main.dom.body.clientWidth, main.dom.body.clientHeight);
-    console.log('当前界面已调整');
 }
 /*
 main.dom.body.onkeydown = function(e) {

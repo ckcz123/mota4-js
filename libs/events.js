@@ -13,9 +13,8 @@ events.prototype.init = function () {
         },
         'changeFloor': function (data, core, callback) {
             // core.changeFloor(data.event.data.floorId, data.event.data.heroLoc);
-            core.changeFloor(data.event.data.floorId, data.event.data.stair, data.event.data.heroLoc);
-            if (core.isset(callback))
-                callback();
+            core.changeFloor(data.event.data.floorId, data.event.data.stair,
+                data.event.data.heroLoc, callback);
         },
         'getItem': function (data, core, callback) {
             core.getItem(data.event.id, 1, data.x, data.y);

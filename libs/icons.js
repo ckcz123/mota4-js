@@ -51,7 +51,11 @@ icons.prototype.init = function () {
             'mockBlueWallDoor': {'loc': 15, 'size': 32},
             'mockYellowWallDoor': {'loc': 16, 'size': 32},
             'mockWhiteWallDoor': {'loc': 17, 'size': 32},
-            'iceYellowWallDoor': {'loc': 18, 'size': 32}
+            'iceYellowWallDoor': {'loc': 18, 'size': 32},
+            'transparentStar': {'loc': 19, 'size': 32},
+            'exclamation': {'loc': 20, 'size': 32},
+            'portal': {'loc': 21, 'size': 32},
+            'switch': {'loc': 22, 'size': 32}
         },
         'npcs': {
             'man': {'loc': 0, 'size': 32},
