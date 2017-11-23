@@ -33,11 +33,9 @@ function main() {
         'core'
     ];
     console.log('加载js文件列表加载完成' + this.loadList);
-    this.images = {
-        '25': [],
-        '32': ['animates', 'enemys', 'heros', 'items', 'npcs', 'terrains'],
-        '64': []
-    }
+    this.images = [
+        'animates', 'enemys', 'heros', 'items', 'npcs', 'terrains'
+    ];
     this.sounds = {
         'mp3': ['bgm-loop', 'floor'],
         'ogg': ['attack', 'door', 'item']
@@ -75,21 +73,23 @@ function main() {
     this.firstData = {
         'version': 'Ver 1.0.0 (Beta)',
         'floor': 'MT0',
-        'heroId': 'hero1',
-        'heroName': '勇士',
-        'heroLoc': {'direction': 'down', 'x': 6, 'y': 12},
-        'heroHp': 1000,
-        'heroAtk': 10,
-        'heroDef': 10,
-        'heroMoney': 0,
-        'heroHard': 0,
-        'heroItem': {
-            'key': {
-                'yellowKey': 0,
-                'blueKey': 0,
-                'redKey': 0,
-                'greenKey': 0
-            }
+        'hero': {
+            'id': 'hero1',
+            'hp': 1000,
+            'atk': 10,
+            'def': 10,
+            'mdef': 0,
+            'money': 0,
+            'items': {
+                'keys': {
+                    'yellowKey': 0,
+                    'blueKey': 0,
+                    'redKey': 0
+                },
+                'constants': {},
+                'tools': {}
+            },
+            'loc': {'direction': 'down', 'x': 6, 'y': 12},
         },
         'shops': {
             'shop1': {

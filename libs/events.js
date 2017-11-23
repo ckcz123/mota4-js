@@ -31,7 +31,7 @@ events.prototype.init = function () {
 
         },
         'openShop': function (data, core, callback) {
-            core.openShop(data.event.shopid);
+            core.openShop(data.event.npcid);
             if (core.isset(callback))
                 callback();
         }

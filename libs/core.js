@@ -6,14 +6,11 @@ function core() {
     this.dom = {};
     this.statusBar = {};
     this.canvas = {};
-    this.images = {};
+    this.images = [];
+    this.sounds = {};
     this.firstData = {};
     this.material = {
-        'images': {
-            '25': {},
-            '32': {},
-            '64': {}
-        },
+        'images': {},
         'sounds': {
             'mp3': {},
             'ogg': {}
@@ -53,6 +50,7 @@ function core() {
             'money': 0,
         },
         'hard': 10,
+        'flyRange': [],
         'played': false,
         'isIOS': false,
         'soundStatus': true,
@@ -79,7 +77,7 @@ function core() {
         'fourAnimateObjs': [],
         'boxAnimateObjs': [],
         'openingDoor': null,
-        'heroLoc': {'direction': 'down', 'x': 0, 'y': 1},
+        'heroLoc': {'direction': 'down', 'x': 0, 'y': 0},
         'autoStep': 0,
         'movedStep': 0,
         'destStep': 0,
@@ -104,7 +102,6 @@ core.prototype.init = function (dom, statusBar, canvas, images, sounds, firstDat
     core.material.enemys = core.enemys.getEnemys();
     core.material.icons = core.icons.getIcons();
     core.material.events = core.events.getEvents();
-
     // test if iOS
     var userAgent = navigator.userAgent;
     if (userAgent.indexOf('iPhone') > -1 || userAgent.indexOf('iPad') > -1) {
@@ -178,19 +175,16 @@ core.prototype.setStartLoadTipText = function (text) {
 
 core.prototype.loader = function (callback) {
     var loadedImageNum = 0, allImageNum = 0, loadSoundNum = 0, allSoundNum = 0;
-    for (var key in core.images) {
-        allImageNum += core.images[key].length;
-    }
+    allImageNum = core.images.length;
     for (var key in core.sounds) {
         allSoundNum += core.sounds[key].length;
     }
-    for (var key in core.images) {
-        for (var i = 0; i < core.images[key].length; i++) {
-            core.loadImage(core.images[key][i] + '-' + key + 'x' + key, key, function (imgName, imgSize, image) {
+        for (var i = 0; i < core.images.length; i++) {
+            core.loadImage(core.images[i], function (imgName, image) {
                 core.setStartLoadTipText('正在加载图片 ' + imgName + "...");
                 imgName = imgName.split('-');
                 imgName = imgName[0];
-                core.material.images[imgSize][imgName] = image;
+                core.material.images[imgName] = image;
                 loadedImageNum++;
                 // core.setStartLoadTipText(imgName + ' 加载完毕...');
                 core.setStartProgressVal(loadedImageNum * (100 / allImageNum));
@@ -221,20 +215,19 @@ core.prototype.loader = function (callback) {
                     }
                 }
             });
-        }
     }
 }
 
-core.prototype.loadImage = function (imgName, imgSize, callback) {
+core.prototype.loadImage = function (imgName, callback) {
     core.setStartLoadTipText('加载 ' + imgName + ' 中...');
     var image = new Image();
     image.src = 'images/' + imgName + '.png';
     if (image.complete) {
-        callback(imgName, imgSize, image);
+        callback(imgName, image);
         return;
     }
     image.onload = function () {
-        callback(imgName, imgSize, image);
+        callback(imgName, image);
     }
 }
 
@@ -271,9 +264,9 @@ core.prototype.playGame = function () {
         core.drawMap(core.firstData.floor, function () {
             core.playSound('floor', 'mp3');
             core.hide(core.dom.floorMsgGroup, 10);
-            core.setHeroLoc('direction', core.firstData.heroLoc.direction);
-            core.setHeroLoc('x', core.firstData.heroLoc.x);
-            core.setHeroLoc('y', core.firstData.heroLoc.y);
+            core.setHeroLoc('direction', core.firstData.hero.loc.direction);
+            core.setHeroLoc('x', core.firstData.hero.loc.x);
+            core.setHeroLoc('y', core.firstData.hero.loc.y);
             core.drawHero(core.getHeroLoc('direction'), core.getHeroLoc('x'), core.getHeroLoc('y'), 'stop');
             core.setHeroMoveTriggerInterval();
         });
@@ -871,7 +864,6 @@ core.prototype.setHeroMoveTriggerInterval = function () {
                     }
                 }
                 else {
-                    // core.lockKeyBoard();
                     core.status.heroStop = true;
                 }
                 return;
@@ -887,7 +879,7 @@ core.prototype.setHeroMoveTriggerInterval = function () {
                         core.drawHero(core.getHeroLoc('direction'), core.getHeroLoc('x'), core.getHeroLoc('y'), 'stop');
                     }
                 }
-                if (core.status.heroStop) {
+                else if (core.status.heroStop) {
                     core.drawHero(core.getHeroLoc('direction'), core.getHeroLoc('x'), core.getHeroLoc('y'), 'stop');
                 }
                 core.trigger(core.getHeroLoc('x'), core.getHeroLoc('y'));
@@ -895,11 +887,11 @@ core.prototype.setHeroMoveTriggerInterval = function () {
                 core.status.heroMoving = false;
             });
         }
-    }, 10);
+    }, 50);
 }
 
 core.prototype.moveHero = function (direction) {
-    var heroIcon = core.material.icons.heros[core.firstData.heroId][direction];
+    var heroIcon = core.material.icons.heros[core.firstData.hero.id][direction];
     core.setHeroLoc('direction', direction);
     core.status.heroStop = false;
 }
@@ -912,11 +904,11 @@ core.prototype.drawHero = function (direction, x, y, status, offsetX, offsetY) {
     offsetX = offsetX || 0;
     offsetY = offsetY || 0;
     core.clearAutomaticRouteNode(x, y);
-    var heroIcon = core.material.icons.heros[core.firstData.heroId][direction];
+    var heroIcon = core.material.icons.heros[core.firstData.hero.id][direction];
     x = x * heroIcon.size;
     y = y * heroIcon.size;
     core.canvas.hero.clearRect(x - 32, y - 32, 96, 96);
-    core.canvas.hero.drawImage(core.material.images[heroIcon.size].heros, heroIcon.loc[status] * heroIcon.size, heroIcon.loc.iconLoc * heroIcon.size, heroIcon.size, heroIcon.size, x + offsetX, y + offsetY, heroIcon.size, heroIcon.size);
+    core.canvas.hero.drawImage(core.material.images.heros, heroIcon.loc[status] * heroIcon.size, heroIcon.loc.iconLoc * heroIcon.size, heroIcon.size, heroIcon.size, x + offsetX, y + offsetY, heroIcon.size, heroIcon.size);
 }
 
 /**
@@ -956,7 +948,7 @@ core.prototype.openDoor = function (id, x, y, needKey) {
             return;
         }
         core.canvas.event.clearRect(32 * x, 32 * y, 32, 32);
-        core.canvas.event.drawImage(core.material.images['32'].animates, 32 * state, 32 * door.loc, 32, 32, 32 * x, 32 * y, 32, 32);
+        core.canvas.event.drawImage(core.material.images.animates, 32 * state, 32 * door.loc, 32, 32, 32 * x, 32 * y, 32, 32);
     }, 30)
 }
 
@@ -1173,7 +1165,7 @@ core.prototype.drawBlock = function (map, image, cutX, cutY, x, y, size, zoom, c
     if (core.isset(clear) && clear == true) {
         core.canvas[map].clearRect(x * size, y * size, size, size);
     }
-    core.canvas[map].drawImage(core.material.images[size][image], cutX * size, cutY * size, size, size, x * size, y * size, size * zoom, size * zoom);
+    core.canvas[map].drawImage(core.material.images[image], cutX * size, cutY * size, size, size, x * size, y * size, size * zoom, size * zoom);
 }
 
 core.prototype.setFont = function (map, font) {
@@ -1258,7 +1250,7 @@ core.prototype.drawMap = function (mapName, callback) {
     for (x = 0; x < 13; x++) {
         for (y = 0; y < 13; y++) {
             blockIcon = core.material.icons.terrains.blackFloor;
-            blockImage = core.material.images[blockIcon.size].terrains;
+            blockImage = core.material.images.terrains;
             core.canvas.bg.drawImage(blockImage, 0, blockIcon.loc * blockIcon.size, blockIcon.size, blockIcon.size, x * blockIcon.size, y * blockIcon.size, blockIcon.size, blockIcon.size);
         }
     }
@@ -1267,7 +1259,7 @@ core.prototype.drawMap = function (mapName, callback) {
     for (var b = 0; b < mapBlocks.length; b++) {
         if (core.isset(mapBlocks[b].bg)) {
             blockIcon = core.material.icons[mapBlocks[b].bg.cls][mapBlocks[b].bg.id];
-            blockImage = core.material.images[blockIcon.size][mapBlocks[b].bg.cls];
+            blockImage = core.material.images[mapBlocks[b].bg.cls];
             x = mapBlocks[b].x * blockIcon.size;
             y = mapBlocks[b].y * blockIcon.size;
             if (mapBlocks[b].bg.cls != 'empty') {
@@ -1280,22 +1272,22 @@ core.prototype.drawMap = function (mapName, callback) {
         }
         else {
             blockIcon = core.material.icons.terrains.blackFloor;
-            blockImage = core.material.images[blockIcon.size].terrains;
+            blockImage = core.material.images.terrains;
             x = mapBlocks[b].x * blockIcon.size;
             y = mapBlocks[b].y * blockIcon.size;
             core.canvas.bg.drawImage(blockImage, 0, blockIcon.loc * blockIcon.size, blockIcon.size, blockIcon.size, x, y, blockIcon.size, blockIcon.size);
         }
         if (core.isset(mapBlocks[b].event)) {
             blockIcon = core.material.icons[mapBlocks[b].event.cls][mapBlocks[b].event.id];
-            blockImage = core.material.images[blockIcon.size][mapBlocks[b].event.cls];
-            core.canvas.event.drawImage(core.material.images[blockIcon.size][mapBlocks[b].event.cls], 0, blockIcon.loc * blockIcon.size, blockIcon.size, blockIcon.size, x, y, blockIcon.size, blockIcon.size);
+            blockImage = core.material.images[mapBlocks[b].event.cls];
+            core.canvas.event.drawImage(core.material.images[mapBlocks[b].event.cls], 0, blockIcon.loc * blockIcon.size, blockIcon.size, blockIcon.size, x, y, blockIcon.size, blockIcon.size);
             core.addGlobalAnimate(mapBlocks[b].event.animate, x, y, 'event', blockIcon.loc, blockIcon.size, blockImage);
         }
         /*
         if(core.isset(mapBlocks[b].fg)) {
             blockIcon = core.material.icons[mapBlocks[b].fg.cls][mapBlocks[b].fg.id];
-            blockImage = core.material.images[blockIcon.size][mapBlocks[b].fg.cls];
-            core.canvas.fg.drawImage(core.material.images[blockIcon.size][mapBlocks[b].fg.cls], 0, blockIcon.loc * blockIcon.size, blockIcon.size, blockIcon.size, x, y, blockIcon.size, blockIcon.size);
+            blockImage = core.material.images[mapBlocks[b].fg.cls];
+            core.canvas.fg.drawImage(core.material.images[mapBlocks[b].fg.cls], 0, blockIcon.loc * blockIcon.size, blockIcon.size, blockIcon.size, x, y, blockIcon.size, blockIcon.size);
             core.addGlobalAnimate(mapBlocks[b].fg.animate, x, y, 'fg', blockIcon.loc, blockIcon.size, blockImage);
         }
         */
@@ -1711,7 +1703,7 @@ core.prototype.getItemEffect = function (itemId, itemNum) {
     var itemCls = core.material.items[itemId].cls;
 
     // 消耗品
-    if (itemCls === 'item') {
+    if (itemCls === 'items') {
         if (itemId === 'redJewel') core.status.hero.atk += 1 + hard;
         if (itemId === 'blueJewel') core.status.hero.def += 1 + hard;
         if (itemId === 'greenJewel') core.status.hero.mdef += 2 + 3 * hard;
@@ -1762,7 +1754,7 @@ core.prototype.getItem = function (itemId, itemNum, itemX, itemY) {
     core.removeBlock('event', itemX, itemY);
     var text = '获得 ' + core.material.items[itemId].name;
     if (itemNum > 1) text += "x" + itemNum;
-    if (itemCls === 'item') text += "，" + core.getItemEffectTip(itemId);
+    if (itemCls === 'items') text += "，" + core.getItemEffectTip(itemId);
     core.drawTip(text, 'image', core.material.icons.items[itemId]);
     core.canvas.event.clearRect(itemX * 32, itemY * 32, 32, 32);
     core.updateStatusBar();
@@ -1808,7 +1800,7 @@ core.prototype.drawTip = function (text, type, itemIcon) {
         core.clearMap('data', 5, 5, 400, height);
         core.fillRect('data', 5, 5, width, height, '#000');
         if (core.isset(itemIcon)) {
-            core.canvas.data.drawImage(core.material.images['32'].items, 0, itemIcon.loc * itemIcon.size, itemIcon.size, itemIcon.size, 10, 8, itemIcon.size, itemIcon.size);
+            core.canvas.data.drawImage(core.material.images.items, 0, itemIcon.loc * itemIcon.size, itemIcon.size, itemIcon.size, 10, 8, itemIcon.size, itemIcon.size);
         }
         core.fillText('data', text, textX + 5, textY + 15, '#fff');
         if (opacityVal > 0.6 || opacityVal < 0) {
@@ -1843,7 +1835,7 @@ core.prototype.getItemAnimate = function(itemId, itemNum, itemX, itemY) {
 	core.interval.getItemAnimate[core.interval.getItemAnimate.length] = window.setInterval(function() {
 		top += 3;
 		core.canvas.event.clearRect(itemX, itemY, 32, 32);
-		core.canvas.event.drawImage(core.material.images['32'].items, 0, itemIcon.loc * itemIcon.size - top, itemIcon.size, itemIcon.size, itemX, itemY, itemIcon.size, itemIcon.size);
+		core.canvas.event.drawImage(core.material.images.items, 0, itemIcon.loc * itemIcon.size - top, itemIcon.size, itemIcon.size, itemX, itemY, itemIcon.size, itemIcon.size);
 		core.canvas.event.clearRect(itemX, itemY + 30, 32, 2);
 		if(top >= 30) {
 			top = 0;
@@ -1889,9 +1881,9 @@ core.prototype.showConfirmBox = function (text, yesCallback, noCallback) {
 
 }
 
-core.prototype.checkStatus = function (name, need, item) {
+core.prototype.checkStatus = function (name, need, item, clearData) {
     if (need && core.status.event.id == name) {
-        core.closePanel();
+        core.closePanel(clearData);
         return false;
     }
 
@@ -1912,7 +1904,7 @@ core.prototype.checkStatus = function (name, need, item) {
 }
 
 core.prototype.openBook = function (need) {
-    if (!core.checkStatus('book', need, true))
+    if (!core.checkStatus('book', need, true, true))
         return;
 
     core.drawEnemyBook(1);
@@ -1921,6 +1913,8 @@ core.prototype.openBook = function (need) {
 core.prototype.useFly = function (need) {
     if (!core.checkStatus('fly', need, true))
         return;
+
+    core.drawFly(core.status.hero.floor);
 }
 
 core.prototype.openToolbox = function (need) {
@@ -2027,7 +2021,7 @@ core.prototype.openShop = function (id) {
     core.temp.boxAnimateObjs = [];
     core.temp.boxAnimateObjs.push({
         'bgx': left + 15, 'bgy': top + 30, 'bgsize': 32,
-        'image': core.material.images['32'].npcs,
+        'image': core.material.images.npcs,
         'x': left + 15, 'y': top + 30, 'icon': core.material.icons.npcs[shop.icon]
     });
     core.setBoxAnimate(core.firstData.animateSpeed);
@@ -2047,12 +2041,13 @@ core.prototype.openShop = function (id) {
 
 }
 
-core.prototype.closePanel = function () {
+core.prototype.closePanel = function (clearData) {
     core.temp.boxAnimateObjs = [];
     core.setBoxAnimate(core.firstData.animateSpeed);
     core.clearMap('ui', 0, 0, 416, 416);
     core.setAlpha('ui', 1.0);
-    core.clearMap('data', 0, 0, 416, 416);
+    if (core.isset(clearData) && clearData)
+        core.clearMap('data', 0, 0, 416, 416);
     core.unLockControl();
     core.status.event.data = null;
     core.status.event.id = null;
@@ -2125,22 +2120,15 @@ core.prototype.drawEnemyBook = function (page) {
 
     enemys = enemys.slice(start, end);
     core.temp.boxAnimateObjs = [];
-    /*
-        var alpha=core.canvas.data.globalAlpha;
-        var font=core.canvas.data.font;
-        var style=core.canvas.data.fillStyle;
-    */
     for (var i = 0; i < enemys.length; i++) {
         // 边框
-        //core.setStokeStyle('ui', '#FFFFFF');
-        //core.setLineWidth('ui', 2);
         var enemy = enemys[i];
         core.strokeRect('ui', 22, 62 * i + 22, 42, 42, '#DDDDDD', 2);
 
         // 怪物
         core.temp.boxAnimateObjs.push({
             'bgx': 22, 'bgy': 62 * i + 22, 'bgsize': 42,
-            'image': core.material.images['32'].enemys,
+            'image': core.material.images.enemys,
             'x': 27, 'y': 62 * i + 27, 'icon': core.material.icons.enemys[enemy.id]
         });
 
@@ -2183,14 +2171,8 @@ core.prototype.drawEnemyBook = function (page) {
         core.fillText('ui', enemy.defDamage, 365, 62 * i + 71, '#DDDDDD', 'bold 13px Verdana');
 
     }
-    /*
-        core.setAlpha('data', alpha);
-        core.setFont('data', font);
-        core.setFillStyle('data', style);
-    */
     core.setBoxAnimate(core.firstData.animateSpeed);
     core.drawPagination(page, totalPage);
-
 }
 
 core.prototype.drawPagination = function (page, totalPage) {
@@ -2206,22 +2188,33 @@ core.prototype.drawPagination = function (page, totalPage) {
     core.fillText('ui', page + " / " + totalPage, (416 - length) / 2, 403);
     if (page < totalPage)
         core.fillText('ui', '下一页', 208 + 60, 403);
+}
+
+core.prototype.drawFly = function(page) {
+    var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
+
+    core.clearMap('ui', 0, 0, 416, 416);
+    core.setAlpha('ui', 1);
+    core.setFillStyle('ui', background);
+    core.fillRect('ui', 0, 0, 416, 416);
+
+
 
 }
 
 core.prototype.setFirstItem = function () {
-    core.setStatus('level', core.firstData.heroLevel);
-    core.setStatus('hp', core.firstData.heroHp);
-    core.setStatus('atk', core.firstData.heroAtk);
-    core.setStatus('def', core.firstData.heroDef);
-    core.setStatus('money', core.firstData.heroMoney);
-    for (var itemClass in core.firstData.heroItem) {
+    core.setStatus('hp', core.firstData.hero.hp);
+    core.setStatus('atk', core.firstData.hero.atk);
+    core.setStatus('def', core.firstData.hero.def);
+    core.setStatus('mdef', core.firstData.hero.mdef);
+    core.setStatus('money', core.firstData.hero.money);
+    for (var itemClass in core.firstData.hero.items) {
         if (!core.isset(core.temp.itemList[itemClass])) {
             core.temp.itemList[itemClass] = {};
         }
-        for (var itemName in core.firstData.heroItem[itemClass]) {
+        for (var itemName in core.firstData.hero.items[itemClass]) {
             if (!core.isset(core.temp.itemList[itemClass][itemName])) {
-                core.temp.itemList[itemClass][itemName] = 0;
+                core.temp.itemList[itemClass][itemName] = core.firstData.hero.items[itemClass][itemName];
             }
         }
     }
@@ -2246,7 +2239,7 @@ core.prototype.updateStatusBar = function () {
     });
     var keys = ['yellowKey', 'blueKey', 'redKey'];
     keys.forEach(function (key) {
-        var num = core.temp.itemList.key[key];
+        var num = core.temp.itemList.keys[key];
         if (num < 10) num = "0" + num;
         core.statusBar[key].innerHTML = num;
     })
