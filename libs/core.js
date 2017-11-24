@@ -292,7 +292,7 @@ core.prototype.loadSound = function() {
     for (var key in core.material.sounds) {
         for (var name in core.material.sounds[key]) {
 
-            if (core.material.sounds[key][name].readyState) {
+            if (core.material.sounds[key][name].readyState==4) {
                 if (name=='bgm' && core.musicStatus.soundStatus) {
                     console.log("Play Bgm!");
                     core.playBgm(name, key);
