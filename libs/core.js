@@ -222,12 +222,13 @@ core.prototype.loader = function (callback) {
                             core.loadSound(core.sounds[key][i], key, function (soundName, soundType, sound) {
 
                                 if (!core.isset(sound)) {
+                                    alert("加载音频 "+ soundName +" 失败");
                                     core.musicStatus.canPlay = false;
                                     core.musicStatus.soundStatus = false;
                                     callback();
                                 }
 
-                                alert("加载音频 "+soundName+" 成功！");
+                                // alert("加载音频 "+soundName+" 成功！");
 
                                 // clearTimeout(core.timeout.loadSoundTimeout);
                                 soundName = soundName.split('-');
