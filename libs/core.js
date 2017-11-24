@@ -136,12 +136,19 @@ core.prototype.init = function (dom, statusBar, canvas, images, sounds, firstDat
         // core.showStartAnimate();
 
         if (!core.musicStatus.isIOS && core.musicStatus.canPlay) {
-            core.playBgm('bgm', 'mp3');
-            if (core.musicStatus.soundStatus) {
-                core.enabledSound();
+            try {
+                core.playBgm('bgm', 'mp3');
+                if (core.musicStatus.soundStatus) {
+                    core.enabledSound();
+                }
+                else {
+                    core.disabledSound();
+                }
             }
-            else {
-                core.disabledSound();
+            catch (e) {
+                console.log(e);
+                core.musicStatus.canPlay = false;
+                core.musicStatus.soundStatus
             }
         }
         else {
