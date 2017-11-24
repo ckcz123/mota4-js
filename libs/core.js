@@ -247,15 +247,20 @@ core.prototype.loader = function (callback) {
 }
 
 core.prototype.loadImage = function (imgName, callback) {
-    core.setStartLoadTipText('加载 ' + imgName + ' 中...');
-    var image = new Image();
-    image.src = 'images/' + imgName + '.png';
-    if (image.complete) {
-        callback(imgName, image);
-        return;
+    try {
+        core.setStartLoadTipText('加载图片 ' + imgName + ' 中...');
+        var image = new Image();
+        image.src = 'images/' + imgName + '.png';
+        if (image.complete) {
+            callback(imgName, image);
+            return;
+        }
+        image.onload = function () {
+            callback(imgName, image);
+        }
     }
-    image.onload = function () {
-        callback(imgName, image);
+    catch (e) {
+        alert(e);
     }
 }
 
@@ -263,7 +268,7 @@ core.prototype.loadSound = function (soundName, soundType, callback) {
     try {
 
         soundName = soundName.split('-');
-        core.setStartLoadTipText('加载 ' + soundName[0] + ' 中...');
+        core.setStartLoadTipText('加载音频 ' + soundName[0] + ' 中...');
         var sound = new Audio('audio');
         sound.src = 'sounds/' + soundName[0] + '.' + soundType;
         if (soundName[1] == 'loop') {
