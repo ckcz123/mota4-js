@@ -206,6 +206,14 @@ main.dom.body.onselectstart = function () {
     return false;
 }
 
+document.onmousemove = function() {
+    main.core.loadSound();
+}
+
+document.ontouchstart = function() {
+    main.core.loadSound();
+}
+
 main.dom.data.onmousedown = function (e) {
     e.stopPropagation();
     var loc = main.core.getClickLoc(e.clientX, e.clientY);

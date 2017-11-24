@@ -11,10 +11,7 @@ function core() {
     this.firstData = {};
     this.material = {
         'images': {},
-        'sounds': {
-            'mp3': {},
-            'ogg': {}
-        },
+        'sounds': {},
         'ground': null,
         'items': {},
         'enemys': {},
@@ -37,7 +34,7 @@ function core() {
     }
     this.musicStatus = {
         'isIOS': false,
-        'canPlay': true,
+        'loaded': false,
         'soundStatus': true,
         'playedSound': null,
         'playedBgm': null,
@@ -135,6 +132,7 @@ core.prototype.init = function (dom, statusBar, canvas, images, sounds, firstDat
         console.log(core.material);
         // core.showStartAnimate();
 
+        /*
         if (!core.musicStatus.isIOS && core.musicStatus.canPlay) {
             try {
                 core.playBgm('bgm', 'mp3');
@@ -152,6 +150,7 @@ core.prototype.init = function (dom, statusBar, canvas, images, sounds, firstDat
         else {
             core.musicStatus.soundStatus = false;
         }
+        */
 
         core.playGame();
 
@@ -210,6 +209,7 @@ core.prototype.loader = function (callback) {
                 // core.setStartLoadTipText(imgName + ' 加载完毕...');
                 core.setStartProgressVal(loadedImageNum * (100 / allImageNum));
                 if (loadedImageNum == allImageNum) {
+                    /*
                     if (core.musicStatus.isIOS) {
                         callback();
                         return;
@@ -244,6 +244,22 @@ core.prototype.loader = function (callback) {
                             });
                         }
                     }
+                    */
+                    // 加载音频
+                    for (var key in core.sounds) {
+                        for (var i = 0; i < core.sounds[key].length; i++) {
+                            var soundName=core.sounds[key][i];
+                            soundName = soundName.split('-');
+                            var sound = new Audio('sounds/' + soundName[0] + '.' + key);
+                            if (soundName[1] == 'loop') {
+                                sound.loop = 'loop';
+                            }
+                            if (!core.isset(core.material.sounds[key]))
+                                core.material.sounds[key] = {};
+                            core.material.sounds[key][soundName[0]] = sound;
+                        }
+                    }
+                    callback();
                 }
             });
     }
@@ -267,16 +283,39 @@ core.prototype.loadImage = function (imgName, callback) {
     }
 }
 
-core.prototype.loadSoundTest = function(yesCallback, noCallback) {
-    try {
-        var sound = new Audio('audio');
+core.prototype.loadSound = function() {
+    if (core.musicStatus.loaded || !core.isset(core.material.sounds.mp3)) return;
+    core.musicStatus.loaded=true;
+    console.log("Load Sound!");
 
-    }
-    catch (e) {
+    // 全部设为静音
+    for (var key in core.material.sounds) {
+        for (var name in core.material.sounds[key]) {
 
+            if (core.material.sounds[key][name].readyState) {
+                if (name=='bgm' && core.musicStatus.soundStatus) {
+                    console.log("Play Bgm!");
+                    core.playBgm(name, key);
+                }
+                return;
+            }
+
+            core.material.sounds[key][name].muted = true;
+            core.material.sounds[key][name].play();
+
+            core.material.sounds[key][name].oncanplay = function() {
+                core.material.sounds[key][name].pause();
+                core.material.sounds[key][name].muted = false;
+                if (name=='bgm' && core.musicStatus.soundStatus) {
+                    console.log("Play Bgm!");
+                    core.playBgm(name, key);
+                }
+            }
+        }
     }
 }
 
+/*
 core.prototype.loadSound = function (soundName, soundType, callback) {
     try {
 
@@ -287,12 +326,11 @@ core.prototype.loadSound = function (soundName, soundType, callback) {
         if (soundName[1] == 'loop') {
             sound.loop = 'loop';
         }
-        /*
+
         if (!('oncanplaythrough' in document ? true : false)) {
             callback(soundName[0], soundType, sound);
             return;
         }
-        */
         sound.oncanplaythrough = function () {
             callback(soundName[0], soundType, sound);
         }
@@ -301,12 +339,8 @@ core.prototype.loadSound = function (soundName, soundType, callback) {
         alert(e);
         callback();
     }
-    /*
-    core.timeout.loadSoundTimeout = window.setTimeout(function () {
-        callback(soundName[0], soundType, sound);
-    }, 15000);
-    */
 }
+*/
 
 core.prototype.isPlaying = function() {
     if (core.isset(core.status.played) && core.status.played)
@@ -465,10 +499,12 @@ core.prototype.onclick = function (x, y) {
                     core.drawTip("iOS设备不支持播放音乐");
                     return;
                 }
+                /*
                 if (!core.musicStatus.canPlay) {
                     core.drawTip("当前网络或设备不支持播放音乐");
                     return;
                 }
+                */
                 core.changeSoundStatus();
                 core.openSettings(false);
             }
@@ -2830,7 +2866,7 @@ core.prototype.getClickLoc = function (x, y) {
 }
 
 core.prototype.playSound = function (soundName, soundType) {
-    if (!core.musicStatus.soundStatus) {
+    if (!core.musicStatus.soundStatus || !core.musicStatus.loaded) {
         return;
     }
     /*
@@ -2848,7 +2884,7 @@ core.prototype.playBgm = function (bgmName, bgmType) {
         return;
     }
     */
-    if (core.musicStatus.isIOS) return;
+    if (core.musicStatus.isIOS || !core.musicStatus.loaded) return;
     if (core.isset(core.musicStatus.playedBgm)) {
         core.musicStatus.playedBgm.pause();
     }
