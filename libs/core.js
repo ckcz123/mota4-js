@@ -146,9 +146,7 @@ core.prototype.init = function (dom, statusBar, canvas, images, sounds, firstDat
                 }
             }
             catch (e) {
-                console.log(e);
-                core.musicStatus.canPlay = false;
-                core.musicStatus.soundStatus = false;
+                alert(e);
             }
         }
         else {
@@ -282,6 +280,7 @@ core.prototype.loadSound = function (soundName, soundType, callback) {
         }
     }
     catch (e) {
+        alert(e);
         callback();
     }
     /*
