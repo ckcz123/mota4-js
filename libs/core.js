@@ -35,7 +35,7 @@ function core() {
     this.musicStatus = {
         'isIOS': false,
         'loaded': false,
-        'bgmStatus': 0, // 0 not loaded, 1 played, -1 loaded
+        'bgmStatus': 0,
         'soundStatus': true,
         'playedSound': null,
         'playedBgm': null,
@@ -133,10 +133,7 @@ core.prototype.init = function (dom, statusBar, canvas, images, sounds, firstDat
 
     core.loader(function () {
         console.log(core.material);
-        // core.showStartAnimate();
-
         core.playGame();
-
     });
 }
 
@@ -270,7 +267,9 @@ core.prototype.loadImage = function (imgName, callback) {
 }
 
 core.prototype.loadSound = function() {
-    if (core.musicStatus.loaded || !core.isset(core.material.sounds.mp3)) {
+    if (!core.isset(core.material.sounds.mp3)) return;
+    // if (core.musicStatus.isIOS) return;
+    if (core.musicStatus.loaded) {
         if (core.musicStatus.bgmStatus>=0) {
             return;
         }
@@ -630,8 +629,6 @@ core.prototype.onclick = function (x, y) {
                 core.useFly(false);
                 return;
             }
-
-
         }
         else {
             core.drawToolbox(itemId);
