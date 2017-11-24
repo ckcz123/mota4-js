@@ -1514,7 +1514,7 @@ core.prototype.trigger = function (x, y) {
             }
             */
             if (core.isset(mapBlocks[b].event) && core.isset(mapBlocks[b].event.trigger) && (core.isset(mapBlocks[b].event.disabledTrigger) ? mapBlocks[b].event.disabledTrigger == false : true)
-                    && !(core.isset(mapBlocks[b].event.noTriggerCross) && mapBlocks[b].event.noTriggerCross && core.status.autoStep < core.status.autoStepRoutes.length)) {
+                    && !(core.isset(mapBlocks[b].event.noTriggerCross) && mapBlocks[b].event.noTriggerCross && (core.status.autoHeroMove || core.status.autoStep<core.status.autoStepRoutes.length))) {
                 core.material.events[mapBlocks[b].event.trigger](mapBlocks[b], core, function (data) {
 
                 });
