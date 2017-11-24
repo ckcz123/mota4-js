@@ -27,12 +27,12 @@ events.prototype.init = function () {
                 callback();
         },
         'visitNpc': function (data, core, callback) {
-            core.visitNpc(data.event);
+            core.visitNpc(data.event.npcid);
             if (core.isset(callback))
                 callback();
         },
         'openShop': function (data, core, callback) {
-            core.openShop(data.event.npcid);
+            core.openShop(data.event.shopid);
             if (core.isset(callback))
                 callback();
         }

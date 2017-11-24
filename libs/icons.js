@@ -64,8 +64,8 @@ icons.prototype.init = function () {
             'fairy': {'loc': 3, 'size': 32},
             'magician': {'loc': 4, 'size': 32},
             'wood': {'loc': 8, 'size': 32},
-            'shop1': {'loc': 10, 'size': 32},
-            'shop2': {'loc': 9, 'size': 32},
+            'blueShop': {'loc': 10, 'size': 32},
+            'redShop': {'loc': 9, 'size': 32},
             'princess': {'loc': 11, 'size': 32}
         },
         'enemys': {

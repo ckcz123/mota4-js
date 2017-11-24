@@ -16,10 +16,10 @@ function core() {
         'items': {},
         'enemys': {},
         'icons': {},
-        'events': {}
+        'events': {},
+        'npcs': {}
     }
     this.timeout = {
-        // 'loadSoundTimeout': null,
         'getItemTipTimeout': null
     }
     this.interval = {
@@ -116,6 +116,7 @@ core.prototype.init = function (dom, statusBar, canvas, images, sounds, firstDat
     core.material.enemys = core.enemys.getEnemys();
     core.material.icons = core.icons.getIcons();
     core.material.events = core.events.getEvents();
+    core.material.npcs = core.npcs.getNpcs();
 
     // test if iOS
     core.musicStatus.soundStatus = core.getLocalStorage('soundStatus', true);
@@ -446,7 +447,7 @@ core.prototype.keyUp = function(e) {
 */
 
 core.prototype.onclick = function (x, y) {
-    console.log("Click: (" + x + "," + y + ")");
+    // console.log("Click: (" + x + "," + y + ")");
 
     // 寻路
     if (!core.status.lockControl) {
@@ -502,16 +503,16 @@ core.prototype.onclick = function (x, y) {
             if (y == 6) core.load(false);
             if (y == 7) {
                 if (core.status.hard == 0) {
-                    core.drawTip("当前已是难度0，不能再咸鱼了");
+                    core.drawTip("当前已是难度0，不能再降低难度了");
                     return;
                 }
-                core.showConfirmBox("本次咸鱼可生命+" + (1100 - 100 * core.status.hard) + "，确定吗？", function () {
+                core.showConfirmBox("本次操作可生命+" + (1100 - 100 * core.status.hard) + "，确定吗？", function () {
                     var add = 1100 - 100 * core.status.hard;
                     core.status.hero.hp += add;
                     core.status.hard--;
                     core.updateStatusBar();
                     core.closePanel();
-                    core.drawTip("咸鱼成功，生命+" + add);
+                    core.drawTip("降低难度成功，生命+" + add);
                 }, function () {
                     core.openSettings(false);
                 });
@@ -625,16 +626,19 @@ core.prototype.onclick = function (x, y) {
 
         if (itemId==core.status.event.data) {
             console.log("使用道具："+core.material.items[itemId].name);
+            core.closePanel(false);
 
             if (itemId=='book') {
                 core.openBook(false);
                 return;
             }
             if (itemId=='fly') {
-                core.closePanel(false);
                 core.useFly(false);
                 return;
             }
+
+            // TODO add other items
+
         }
         else {
             core.drawToolbox(itemId);
@@ -2084,8 +2088,101 @@ core.prototype.drawTip = function (text, type, itemIcon) {
  * 物品处理 end
  */
 
-core.prototype.visitNpc = function (npcevent) {
-    core.drawTip("NPC对话事件尚未完成");
+/*
+ * NPC事件
+ */
+core.prototype.visitNpc = function (npcId) {
+    // core.drawTip("NPC对话事件尚未完成");
+
+    // 正在移动中...
+    if (!core.status.heroStop) {
+        setTimeout(function () {
+            core.visitNpc(npcId);
+        }, 30);
+        return;
+    }
+
+    if (!core.isset(core.status.npcs[npcId]))
+        core.status.npcs[npcId] = 0;
+    var times=core.status.npcs[npcId];
+
+    var list = core.npcs.getEffect(npcId, times);
+    if (list.length==0) return;
+
+    core.status.event.data = {'id': npcId, 'list': list};
+    core.status.event.id = 'npc';
+    core.lockControl();
+
+    core.npcAction();
+
+}
+
+core.prototype.npcAction = function() {
+
+    if (core.status.event.data.list.length==0) {
+        core.closePanel(false);
+        return;
+    }
+
+    var data = core.status.event.data.list.shift();
+    // 对话
+    if (data.type=='text') {
+        core.drawNpcTextBox(data.id, data.content, core.isset(data.isHero) && data.isHero);
+    }
+    // TODO 添加其他可能的NPC事件
+
+}
+
+core.prototype.drawNpcTextBox = function(npcId, content, isHero) {
+    var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
+
+    core.clearMap('ui', 0, 0, 416, 416);
+    core.setAlpha('ui', 1);
+    core.setFillStyle('ui', background);
+
+    var left = 97, top = 64, right = 416 - 2 * left, bottom = 416 - 2 * top;
+    core.fillRect('ui', left, top, right, bottom, background);
+    core.strokeRect('ui', left - 1, top - 1, right + 1, bottom + 1, '#FFFFFF', 2);
+
+    // 名称
+    core.canvas.ui.textAlign = "center";
+    core.fillText('ui', isHero?core.status.hero.name:core.material.npcs[npcId].name, left + 135, top + 34, '#FFFFFF', 'bold 19px Verdana');
+
+    // 动画
+    core.strokeRect('ui', left + 15 - 1, top + 30 - 1, 34, 34, '#DDDDDD', 2);
+    if (isHero) {
+        core.status.boxAnimateObjs = [];
+        core.setBoxAnimate(core.firstData.animateSpeed);
+        core.clearMap('ui', left + 15, top + 30, 32, 32);
+        core.fillRect('ui', left + 15, top + 30, 32, 32, background);
+        var heroIcon = core.material.icons.heros[core.status.hero.id]['down'];
+        core.canvas.ui.drawImage(core.material.images.heros, heroIcon.loc['stop'] * heroIcon.size, heroIcon.loc.iconLoc * heroIcon.size, heroIcon.size, heroIcon.size, left+15, top+30, 32, 32);
+
+    }
+    else {
+        core.status.boxAnimateObjs = [];
+        core.status.boxAnimateObjs.push({
+            'bgx': left + 15, 'bgy': top + 30, 'bgsize': 32,
+            'image': core.material.images.npcs,
+            'x': left + 15, 'y': top + 30, 'icon': core.material.icons.npcs[core.material.npcs[npcId].icon]
+        });
+        core.setBoxAnimate(core.firstData.animateSpeed);
+    }
+
+    /*
+    // 对话
+    core.canvas.ui.textAlign = "left";
+    core.fillText('ui', "勇敢的武士啊，给我" + need, left + 60, top + 65, '#FFFFFF', 'bold 14px Verdana');
+    core.fillText('ui', "金币你就可以：", left + 60, top + 83);
+
+    // 选项
+    core.canvas.ui.textAlign = "center";
+    for (var i = 0; i < shop.choices.length; i++) {
+        var choice = shop.choices[i];
+        core.fillText('ui', choice.text, 208, top + 120 + 32 * i, "#FFFFFF", "bold 17px Verdana");
+    }
+    core.fillText('ui', "退出商店", 208, top + 248);
+    */
 }
 
 /**
@@ -2336,7 +2433,7 @@ core.prototype.openSettings = function (need) {
     core.fillText('ui', "快捷商店", 208, top + 88, "#FFFFFF", "bold 17px Verdana");
     core.fillText('ui', "保存游戏", 208, top + 120, "#FFFFFF", "bold 17px Verdana");
     core.fillText('ui', "读取游戏", 208, top + 152, "#FFFFFF", "bold 17px Verdana");
-    core.fillText('ui', "我要咸鱼", 208, top + 184, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "降低难度", 208, top + 184, "#FFFFFF", "bold 17px Verdana");
     core.fillText('ui', "重新开始", 208, top + 216, "#FFFFFF", "bold 17px Verdana");
     core.fillText('ui', "返回游戏", 208, top + 248, "#FFFFFF", "bold 17px Verdana");
 

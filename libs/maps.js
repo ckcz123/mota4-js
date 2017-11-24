@@ -391,8 +391,9 @@ maps.prototype.getBlock = function (f, x, y, id) {
     if (id == 56) tmp.event = {'cls': 'npcs', 'id': 'wood', 'trigger': 'visitNpc', 'npcid': 'npc6'};
     if (id == 57) tmp.event = {'cls': 'npcs', 'id': 'wood', 'trigger': 'visitNpc', 'npcid': 'npc7'};
 
-    if (id == 71) tmp.event = {'cls': 'npcs', 'id': 'shop1', 'trigger': 'openShop', 'npcid': 'shop1'};
-    if (id == 72) tmp.event = {'cls': 'npcs', 'id': 'shop1', 'trigger': 'openShop', 'npcid': 'shop2'};
+    // 商店
+    if (id == 71) tmp.event = {'cls': 'npcs', 'id': 'blueShop', 'trigger': 'openShop', 'shopid': 'shop1'};
+    if (id == 72) tmp.event = {'cls': 'npcs', 'id': 'blueShop', 'trigger': 'openShop', 'shopid': 'shop2'};
 
     // 81-100 门
     if (id == 81) tmp.event = {'cls': 'terrains', 'id': 'yellowDoor', 'trigger': 'openDoor'};

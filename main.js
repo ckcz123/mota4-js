@@ -30,6 +30,7 @@ function main() {
         'maps',
         'enemys',
         'events',
+        'npcs',
         'core'
     ];
     console.log('加载js文件列表加载完成' + this.loadList);
@@ -96,7 +97,7 @@ function main() {
         'hard': 10,
         'shops': {
             'shop1': {
-                'id': 'shop1', 'title': '贪婪之神', 'name': '3楼商店', 'icon': 'shop1',
+                'id': 'shop1', 'title': '贪婪之神', 'name': '3楼商店', 'icon': 'blueShop',
                 'times': 0, 'need': "20+2*times", 'visited': false,
                 'choices': [
                     {'text': '攻击+2', 'effect': 'atk+=2'},
@@ -105,7 +106,7 @@ function main() {
                 ]
             },
             'shop2': {
-                'id': 'shop2', 'title': '贪婪之神', 'name': '12楼商店', 'icon': 'shop1',
+                'id': 'shop2', 'title': '贪婪之神', 'name': '12楼商店', 'icon': 'blueShop',
                 'times': 0, 'need': '40+4*times', 'visited': false,
                 'choices': [
                     {'text': '攻击+4', 'effect': 'atk+=4'},

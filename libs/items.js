@@ -34,7 +34,7 @@ items.prototype.init = function () {
         'fly': {'cls': 'constants', 'name': '楼层传送器', 'text': '可以自由往来去过的楼层。'},
         'coin': {'cls': 'constants', 'name': '幸运金币', 'text': '持有时打败怪物可得双倍金币'},
         'snow': {'cls': 'constants', 'name': '冰冻徽章', 'text': '可以将面前的一块熔岩变成平地'},
-        'cross': {'cls': 'constants', 'name': '十字架', 'text': ''},
+        'cross': {'cls': 'constants', 'name': '十字架', 'text': '持有后无视怪物的无敌属性'},
 
         // 道具
         'pickaxe': {'cls': 'tools', 'name': '破墙镐', 'text': '可以破坏勇士面前的一堵墙。'},
