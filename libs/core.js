@@ -250,13 +250,17 @@ core.prototype.loader = function (callback) {
                         for (var i = 0; i < core.sounds[key].length; i++) {
                             var soundName=core.sounds[key][i];
                             soundName = soundName.split('-');
-                            var sound = new Audio('sounds/' + soundName[0] + '.' + key);
+                            var sound = new Audio();
+                            sound.preload = 'none';
+                            sound.src = 'sounds/' + soundName[0] + '.' + key;
                             if (soundName[1] == 'loop') {
                                 sound.loop = 'loop';
                             }
+
                             if (!core.isset(core.material.sounds[key]))
                                 core.material.sounds[key] = {};
                             core.material.sounds[key][soundName[0]] = sound;
+
                         }
                     }
                     callback();
@@ -288,10 +292,15 @@ core.prototype.loadSound = function() {
     core.musicStatus.loaded=true;
     console.log("Load Sound!");
 
+    var toLoadList = [];
+
     // 全部设为静音
     for (var key in core.material.sounds) {
         for (var name in core.material.sounds[key]) {
 
+            toLoadList.push(core.material.sounds[key][name]);
+
+            /*
             if (core.material.sounds[key][name].readyState==4) {
                 if (name=='bgm' && core.musicStatus.soundStatus) {
                     console.log("Play Bgm!");
@@ -299,20 +308,50 @@ core.prototype.loadSound = function() {
                 }
                 return;
             }
+            */
 
-            core.material.sounds[key][name].muted = true;
-            core.material.sounds[key][name].play();
+            // core.material.sounds[key][name].muted = true;
+            /*
+            core.material.sounds[key][name].load();
 
-            core.material.sounds[key][name].oncanplay = function() {
-                core.material.sounds[key][name].pause();
-                core.material.sounds[key][name].muted = false;
-                if (name=='bgm' && core.musicStatus.soundStatus) {
+            core.material.sounds[key][name].oncanplaythrough = function() {
+                // core.material.sounds[key][name].pause();
+                // core.material.sounds[key][name].muted = false;
+                if (core.musicStatus.soundStatus) {
                     console.log("Play Bgm!");
                     core.playBgm(name, key);
                 }
             }
+            */
         }
     }
+    core.loadSoundItem(toLoadList);
+
+    /*
+    if (toLoadList.length>0) {
+        toLoadList[0].oncanplaythrough = function() {
+            toLoadList[0].shift();
+            if (toLoadList.length>0) {
+
+            }
+        }
+        toLoadList[0].load();
+    }
+    */
+}
+
+core.prototype.loadSoundItem = function (toLoadList) {
+    if (toLoadList.length==0) {
+        console.log('play bgm..');
+        if (core.musicStatus.soundStatus)
+            core.playBgm('bgm', 'mp3');
+        return;
+    }
+    var item = toLoadList.shift();
+    item.oncanplaythrough = function() {
+        core.loadSoundItem(toLoadList);
+    }
+    item.load();
 }
 
 /*
@@ -2879,11 +2918,6 @@ core.prototype.playSound = function (soundName, soundType) {
 }
 
 core.prototype.playBgm = function (bgmName, bgmType) {
-    /*
-    if (!core.musicStatus.soundStatus) {
-        return;
-    }
-    */
     if (core.musicStatus.isIOS || !core.musicStatus.loaded) return;
     if (core.isset(core.musicStatus.playedBgm)) {
         core.musicStatus.playedBgm.pause();
