@@ -119,11 +119,13 @@ core.prototype.init = function (dom, statusBar, canvas, images, sounds, firstDat
     // test if iOS
     core.musicStatus.soundStatus = core.getLocalStorage('soundStatus', true);
     var userAgent = navigator.userAgent;
+    /*
     if (userAgent.indexOf('iPhone') > -1 || userAgent.indexOf('iPad') > -1) {
         console.log("你的设备为iphone，不自动播放音乐！");
         core.musicStatus.isIOS = true;
         core.musicStatus.soundStatus = false;
     }
+    */
 
     core.material.ground = new Image();
     core.material.ground.src = "images/ground.png";
