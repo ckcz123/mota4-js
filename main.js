@@ -216,6 +216,7 @@ document.ontouchstart = function() {
 
 document.ontouchend = function() {
     main.core.loadSound();
+    e.preventDefault();
 }
 
 main.dom.data.onmousedown = function (e) {
@@ -226,7 +227,7 @@ main.dom.data.onmousedown = function (e) {
 }
 
 main.dom.data.ontouchstart = function (e) {
-    e.preventDefault();
+    // e.preventDefault();
     var loc = main.core.getClickLoc(e.targetTouches[0].clientX, e.targetTouches[0].clientY);
     var x = parseInt(loc.x / loc.size), y = parseInt(loc.y / loc.size);
     main.core.onclick(x, y);
