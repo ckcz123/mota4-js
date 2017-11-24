@@ -267,13 +267,23 @@ core.prototype.loadImage = function (imgName, callback) {
     }
 }
 
+core.prototype.loadSoundTest = function(yesCallback, noCallback) {
+    try {
+        var sound = new Audio('audio');
+
+    }
+    catch (e) {
+
+    }
+}
+
 core.prototype.loadSound = function (soundName, soundType, callback) {
     try {
 
         soundName = soundName.split('-');
         core.setStartLoadTipText('加载音频 ' + soundName[0] + ' 中...');
-        var sound = new Audio('audio');
-        sound.src = 'sounds/' + soundName[0] + '.' + soundType;
+        var sound = new Audio('sounds/' + soundName[0] + '.' + soundType);
+        // sound.src = 'sounds/' + soundName[0] + '.' + soundType;
         if (soundName[1] == 'loop') {
             sound.loop = 'loop';
         }
