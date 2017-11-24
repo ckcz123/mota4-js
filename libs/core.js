@@ -37,6 +37,7 @@ function core() {
     }
     this.musicStatus = {
         'isIOS': false,
+        'canPlay': true,
         'soundStatus': true,
         'playedSound': null,
         'playedBgm': null,
@@ -134,14 +135,17 @@ core.prototype.init = function (dom, statusBar, canvas, images, sounds, firstDat
         console.log(core.material);
         // core.showStartAnimate();
 
-        core.playBgm('bgm', 'mp3');
-        if (!core.musicStatus.isIOS) {
+        if (!core.musicStatus.isIOS && core.musicStatus.canPlay) {
+            core.playBgm('bgm', 'mp3');
             if (core.musicStatus.soundStatus) {
                 core.enabledSound();
             }
             else {
                 core.disabledSound();
             }
+        }
+        else {
+            core.musicStatus.soundStatus = false;
         }
 
         core.playGame();
@@ -205,25 +209,32 @@ core.prototype.loader = function (callback) {
                         callback();
                         return;
                     }
-                    core.setStartLoadTipText('图片资源加载完毕，加载音频中...');
-                    core.setStartProgressVal(0);
-                    for (var key in core.sounds) {
-                        for (var i = 0; i < core.sounds[key].length; i++) {
-                            core.loadSound(core.sounds[key][i], key, function (soundName, soundType, sound) {
-                                clearTimeout(core.timeout.loadSoundTimeout);
-                                soundName = soundName.split('-');
-                                soundName = soundName[0];
-                                core.setStartLoadTipText('正在加载音频 ' + soundName + "...")
-                                core.material.sounds[soundType][soundName] = sound;
-                                loadSoundNum++;
-                                // core.setStartLoadTipText(soundName + ' 加载完毕...');
-                                core.setStartProgressVal(loadSoundNum * (100 / allSoundNum));
-                                if (loadSoundNum == allSoundNum) {
-                                    core.setStartLoadTipText('音乐资源加载完毕');
-                                    callback();
-                                }
-                            });
+                    try {
+                        core.setStartLoadTipText('图片资源加载完毕，加载音频中...');
+                        core.setStartProgressVal(0);
+                        for (var key in core.sounds) {
+                            for (var i = 0; i < core.sounds[key].length; i++) {
+                                core.loadSound(core.sounds[key][i], key, function (soundName, soundType, sound) {
+                                    clearTimeout(core.timeout.loadSoundTimeout);
+                                    soundName = soundName.split('-');
+                                    soundName = soundName[0];
+                                    core.setStartLoadTipText('正在加载音频 ' + soundName + "...")
+                                    core.material.sounds[soundType][soundName] = sound;
+                                    loadSoundNum++;
+                                    // core.setStartLoadTipText(soundName + ' 加载完毕...');
+                                    core.setStartProgressVal(loadSoundNum * (100 / allSoundNum));
+                                    if (loadSoundNum == allSoundNum) {
+                                        core.setStartLoadTipText('音乐资源加载完毕');
+                                        callback();
+                                    }
+                                });
+                            }
                         }
+                    }
+                    catch (e) {
+                        console.log("Exception:" +e);
+                        core.musicStatus.canPlay = false;
+                        callback();
                     }
                 }
             });
@@ -418,6 +429,10 @@ core.prototype.onclick = function (x, y) {
             if (y == 3) {
                 if (core.musicStatus.isIOS) {
                     core.drawTip("iOS设备不支持播放音乐");
+                    return;
+                }
+                if (!core.musicStatus.canPlay) {
+                    core.drawTip("当前网络或设备不支持播放音乐");
                     return;
                 }
                 core.changeSoundStatus();
