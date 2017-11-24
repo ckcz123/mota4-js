@@ -2131,6 +2131,7 @@ core.prototype.saveData = function(dataId) {
 core.prototype.loadData = function (data, callback) {
     core.resetStatus(data.hero, data.hard, data.floorId,
         core.maps.load(data.maps));
+    core.status.shops = core.clone(data.shops);
 
     core.changeFloor(data.floorId, null, data.hero.loc, function() {
         core.setHeroMoveTriggerInterval();
