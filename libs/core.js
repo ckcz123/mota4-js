@@ -35,6 +35,7 @@ function core() {
     this.musicStatus = {
         'isIOS': false,
         'loaded': false,
+        'bgmStatus': 0, // 0 not loaded, 1 loaded, -1 auto played
         'soundStatus': true,
         'playedSound': null,
         'playedBgm': null,
@@ -262,7 +263,6 @@ core.prototype.loader = function (callback) {
                             if (!core.isset(core.material.sounds[key]))
                                 core.material.sounds[key] = {};
                             core.material.sounds[key][soundName[0]] = sound;
-
                         }
                     }
                     callback();
@@ -290,7 +290,16 @@ core.prototype.loadImage = function (imgName, callback) {
 }
 
 core.prototype.loadSound = function() {
-    if (core.musicStatus.loaded || !core.isset(core.material.sounds.mp3)) return;
+    if (core.musicStatus.loaded || !core.isset(core.material.sounds.mp3)) {
+        if (core.musicStatus.cnt>=0) {
+            return;
+        }
+        core.musicStatus.cnt=1;
+        alert('播放BGM');
+        if (core.musicStatus.soundStatus)
+            core.playBgm('bgm', 'mp3');
+        return;
+    }
     core.musicStatus.loaded=true;
     console.log("Load Sound!");
 
@@ -345,10 +354,14 @@ core.prototype.loadSound = function() {
 core.prototype.loadSoundItem = function (toLoadList) {
     if (toLoadList.length==0) {
         // console.log('play bgm..');
+        /*
         core.drawTip('播放BGM');
         alert('播放BGM');
         if (core.musicStatus.soundStatus)
             core.playBgm('bgm', 'mp3');
+            */
+        if (core.musicStatus.cnt==0)
+            core.musicStatus.cnt=-1;
         return;
     }
     var item = toLoadList.shift();
