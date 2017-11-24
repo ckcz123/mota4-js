@@ -345,6 +345,8 @@ core.prototype.loadSound = function() {
 core.prototype.loadSoundItem = function (toLoadList) {
     if (toLoadList.length==0) {
         // console.log('play bgm..');
+        core.drawTip('播放BGM');
+        alert('播放BGM');
         if (core.musicStatus.soundStatus)
             core.playBgm('bgm', 'mp3');
         return;
