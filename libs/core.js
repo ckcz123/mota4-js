@@ -35,7 +35,7 @@ function core() {
     this.musicStatus = {
         'isIOS': false,
         'loaded': false,
-        'bgmStatus': 0, // 0 not loaded, 1 loaded, -1 auto played
+        'bgmStatus': 0, // 0 not loaded, 1 played, -1 loaded
         'soundStatus': true,
         'playedSound': null,
         'playedBgm': null,
@@ -134,26 +134,6 @@ core.prototype.init = function (dom, statusBar, canvas, images, sounds, firstDat
     core.loader(function () {
         console.log(core.material);
         // core.showStartAnimate();
-
-        /*
-        if (!core.musicStatus.isIOS && core.musicStatus.canPlay) {
-            try {
-                core.playBgm('bgm', 'mp3');
-                if (core.musicStatus.soundStatus) {
-                    core.enabledSound();
-                }
-                else {
-                    core.disabledSound();
-                }
-            }
-            catch (e) {
-                alert(e);
-            }
-        }
-        else {
-            core.musicStatus.soundStatus = false;
-        }
-        */
 
         core.playGame();
 
@@ -291,11 +271,10 @@ core.prototype.loadImage = function (imgName, callback) {
 
 core.prototype.loadSound = function() {
     if (core.musicStatus.loaded || !core.isset(core.material.sounds.mp3)) {
-        if (core.musicStatus.cnt>=0) {
+        if (core.musicStatus.bgmStatus>=0) {
             return;
         }
-        core.musicStatus.cnt=1;
-        alert('播放BGM');
+        core.musicStatus.bgmStatus=1;
         if (core.musicStatus.soundStatus)
             core.playBgm('bgm', 'mp3');
         return;
@@ -308,60 +287,15 @@ core.prototype.loadSound = function() {
     // 全部设为静音
     for (var key in core.material.sounds) {
         for (var name in core.material.sounds[key]) {
-
             toLoadList.push(core.material.sounds[key][name]);
-
-            /*
-            if (core.material.sounds[key][name].readyState==4) {
-                if (name=='bgm' && core.musicStatus.soundStatus) {
-                    console.log("Play Bgm!");
-                    core.playBgm(name, key);
-                }
-                return;
-            }
-            */
-
-            // core.material.sounds[key][name].muted = true;
-            /*
-            core.material.sounds[key][name].load();
-
-            core.material.sounds[key][name].oncanplaythrough = function() {
-                // core.material.sounds[key][name].pause();
-                // core.material.sounds[key][name].muted = false;
-                if (core.musicStatus.soundStatus) {
-                    console.log("Play Bgm!");
-                    core.playBgm(name, key);
-                }
-            }
-            */
         }
     }
     core.loadSoundItem(toLoadList);
-
-    /*
-    if (toLoadList.length>0) {
-        toLoadList[0].oncanplaythrough = function() {
-            toLoadList[0].shift();
-            if (toLoadList.length>0) {
-
-            }
-        }
-        toLoadList[0].load();
-    }
-    */
 }
 
 core.prototype.loadSoundItem = function (toLoadList) {
     if (toLoadList.length==0) {
-        // console.log('play bgm..');
-        /*
-        core.drawTip('播放BGM');
-        alert('播放BGM');
-        if (core.musicStatus.soundStatus)
-            core.playBgm('bgm', 'mp3');
-            */
-        if (core.musicStatus.cnt==0)
-            core.musicStatus.cnt=-1;
+        if (core.musicStatus.bgmStatus==0) core.musicStatus.bgmStatus=-1;
         return;
     }
     var item = toLoadList.shift();
@@ -555,12 +489,6 @@ core.prototype.onclick = function (x, y) {
                     core.drawTip("iOS设备不支持播放音乐");
                     return;
                 }
-                /*
-                if (!core.musicStatus.canPlay) {
-                    core.drawTip("当前网络或设备不支持播放音乐");
-                    return;
-                }
-                */
                 core.changeSoundStatus();
                 core.openSettings(false);
             }
@@ -692,6 +620,18 @@ core.prototype.onclick = function (x, y) {
 
         if (itemId==core.status.event.data) {
             console.log("使用道具："+core.material.items[itemId].name);
+
+            if (itemId=='book') {
+                core.openBook(false);
+                return;
+            }
+            if (itemId=='fly') {
+                core.closePanel(false);
+                core.useFly(false);
+                return;
+            }
+
+
         }
         else {
             core.drawToolbox(itemId);
@@ -2554,6 +2494,9 @@ core.prototype.drawEnemyBook = function (page) {
 
     if (enemys.length == 0) {
         core.fillText('ui', "本层无怪物", 83, 222, '#999999', "bold 50px Verdana");
+        // 退出
+        core.canvas.ui.textAlign = 'center';
+        core.fillText('ui', '返回游戏', 370, 403,'#DDDDDD', 'bold 15px Verdana');
         return;
     }
 

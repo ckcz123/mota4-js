@@ -228,7 +228,6 @@ main.dom.data.onmousedown = function (e) {
 main.dom.data.ontouchstart = function (e) {
     e.preventDefault();
     var loc = main.core.getClickLoc(e.targetTouches[0].clientX, e.targetTouches[0].clientY);
-    // main.core.setAutomaticRoute(parseInt(loc.x / loc.size), parseInt(loc.y / loc.size));
     var x = parseInt(loc.x / loc.size), y = parseInt(loc.y / loc.size);
     main.core.onclick(x, y);
 }
