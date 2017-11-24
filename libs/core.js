@@ -35,7 +35,7 @@ function core() {
     this.musicStatus = {
         'isIOS': false,
         'loaded': false,
-        'bgmStatus': 0,
+        'bgmStatus': false,
         'soundStatus': true,
         'playedSound': null,
         'playedBgm': null,
@@ -120,13 +120,12 @@ core.prototype.init = function (dom, statusBar, canvas, images, sounds, firstDat
     // test if iOS
     core.musicStatus.soundStatus = core.getLocalStorage('soundStatus', true);
     var userAgent = navigator.userAgent;
-    /*
+
     if (userAgent.indexOf('iPhone') > -1 || userAgent.indexOf('iPad') > -1) {
         console.log("你的设备为iphone，不自动播放音乐！");
         core.musicStatus.isIOS = true;
         core.musicStatus.soundStatus = false;
     }
-    */
 
     core.material.ground = new Image();
     core.material.ground.src = "images/ground.png";
@@ -268,7 +267,7 @@ core.prototype.loadImage = function (imgName, callback) {
 
 core.prototype.loadSound = function() {
     if (!core.isset(core.material.sounds.mp3)) return;
-    // if (core.musicStatus.isIOS) return;
+    if (core.musicStatus.isIOS) return;
     if (core.musicStatus.loaded) {
         /*
         if (core.musicStatus.bgmStatus>=0) {
