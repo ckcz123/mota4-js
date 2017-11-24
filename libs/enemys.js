@@ -34,7 +34,7 @@ enemys.prototype.init = function () {
         'darkKnight': {'name': '灵武士', 'hp': 600, 'atk': 575, 'def': 350, 'money': 56, 'special': 0},
         'blackKing': {'name': '黑衣魔王', 'hp': 1356, 'atk': 650, 'def': 356, 'money': 0, 'special': 0},
         'yellowKing': {'name': '黄衣魔王', 'hp': 0, 'atk': 0, 'def': 0, 'money': 0, 'special': 0},
-        'greenKing': {'name': '青衣武士', 'hp': 688, 'atk': 502, 'def': 332, 'money': 52, 'special': 0},
+        'greenKing': {'name': '青衣武士', 'hp': 688, 'atk': 502, 'def': 332, 'money': 53, 'special': 0},
         'blueKnight': {'name': '近卫骑士', 'hp': 400, 'atk': 375, 'def': 350, 'money': 49, 'special': 0},
         'goldSlime': {'name': '黄头怪', 'hp': 0, 'atk': 0, 'def': 0, 'money': 0, 'special': 0},
         'poisonSkeleton': {'name': '紫骷髅', 'hp': 550, 'atk': 370, 'def': 250, 'money': 42, 'special': 0},

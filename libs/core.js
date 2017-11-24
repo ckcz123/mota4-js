@@ -78,6 +78,7 @@ function core() {
         'movedStep': 0,
         'destStep': 0,
         'automaticRoutingTemp': {'destX': 0, 'destY': 0, 'moveStep': []},
+        'autoStepRoutes':  [],
 
         // event事件
         'savePage': null,
@@ -581,6 +582,7 @@ core.prototype.stopAutomaticRoute = function () {
     core.stopAutoHeroMove();
     core.status.automaticRouting = false;
     core.status.automaticRouted = false;
+    core.status.autoStepRoutes = [];
     core.status.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
     core.canvas.ui.clearRect(0, 0, 416, 416);
 }
@@ -693,6 +695,7 @@ core.prototype.setAutomaticRoute = function (destX, destY) {
 
     // 立刻移动
     core.status.automaticRouting = true;
+    // core.setAutoHeroMove(core.status.automaticRoutingTemp.moveStep);
     core.setAutoHeroMove(core.status.automaticRoutingTemp.moveStep);
     core.status.automaticRoutingTemp = {'destX': 0, 'destY': 0, 'moveStep': []};
 
@@ -773,6 +776,7 @@ core.prototype.stopAutoHeroMove = function () {
     core.status.autoStep = 0;
     core.status.destStep = 0;
     core.status.movedStep = 0;
+    core.status.autoStepRoutes = [];
     core.stopHero();
     clearInterval(core.interval.heroAutoMoveScan);
 }
@@ -781,18 +785,19 @@ core.prototype.setAutoHeroMove = function (steps, start) {
     if (steps.length == 0) {
         return;
     }
+    core.status.autoStepRoutes = steps;
     core.status.autoStep = 0;
     clearInterval(core.interval.heroAutoMoveScan);
     core.interval.heroAutoMoveScan = window.setInterval(function () {
         if (!core.status.autoHeroMove) {
-            if (core.status.autoStep == steps.length) {
+            if (core.status.autoStep == core.status.autoStepRoutes.length) {
                 core.stopAutoHeroMove();
                 return;
             }
-            core.autoHeroMove(steps[core.status.autoStep].direction, steps[core.status.autoStep].step);
+            core.autoHeroMove(core.status.autoStepRoutes[core.status.autoStep].direction, core.status.autoStepRoutes[core.status.autoStep].step);
             core.status.autoStep++;
         }
-    }, 100);
+    }, 80);
 }
 
 core.prototype.autoHeroMove = function (direction, step) {
@@ -1508,7 +1513,8 @@ core.prototype.trigger = function (x, y) {
                 });
             }
             */
-            if (core.isset(mapBlocks[b].event) && core.isset(mapBlocks[b].event.trigger) && (core.isset(mapBlocks[b].event.disabledTrigger) ? mapBlocks[b].event.disabledTrigger == false : true)) {
+            if (core.isset(mapBlocks[b].event) && core.isset(mapBlocks[b].event.trigger) && (core.isset(mapBlocks[b].event.disabledTrigger) ? mapBlocks[b].event.disabledTrigger == false : true)
+                    && !(core.isset(mapBlocks[b].event.noTriggerCross) && mapBlocks[b].event.noTriggerCross && core.status.autoStep < core.status.autoStepRoutes.length)) {
                 core.material.events[mapBlocks[b].event.trigger](mapBlocks[b], core, function (data) {
 
                 });

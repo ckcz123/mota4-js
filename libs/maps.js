@@ -403,11 +403,11 @@ maps.prototype.getBlock = function (f, x, y, id) {
     if (id == 86) tmp.event = {'cls': 'terrains', 'id': 'shop1-right'}; // 商店左
     if (id == 87) tmp.event = {
         'cls': 'terrains', 'id': 'upFloor', 'trigger': 'changeFloor', 'noPass': false,
-        'data': {'floorId': 'MT' + (f + 1), 'stair': 'downFloor'}
+        'data': {'floorId': 'MT' + (f + 1), 'stair': 'downFloor'}, 'noTriggerCross': true
     };
     if (id == 88) tmp.event = {
         'cls': 'terrains', 'id': 'downFloor', 'trigger': 'changeFloor', 'noPass': false,
-        'data': {'floorId': 'MT' + (f - 1), 'stair': 'upFloor'}
+        'data': {'floorId': 'MT' + (f - 1), 'stair': 'upFloor'}, 'noTriggerCross': true
     };
     // 传送门
     if (id==89) tmp.event = {
