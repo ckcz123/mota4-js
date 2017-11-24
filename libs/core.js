@@ -2937,8 +2937,9 @@ core.prototype.changeSoundStatus = function () {
 }
 
 core.prototype.enabledSound = function () {
-    core.musicStatus.playedBgm.play();
+    // core.musicStatus.playedBgm.play();
     core.musicStatus.soundStatus = true;
+    core.playBgm('bgm', 'mp3');
     core.setLocalStorage('soundStatus', true);
 }
 
