@@ -22,7 +22,7 @@ function core() {
         'events': {}
     }
     this.timeout = {
-        'loadSoundTimeout': null,
+        // 'loadSoundTimeout': null,
         'getItemTipTimeout': null
     }
     this.interval = {
@@ -148,7 +148,7 @@ core.prototype.init = function (dom, statusBar, canvas, images, sounds, firstDat
             catch (e) {
                 console.log(e);
                 core.musicStatus.canPlay = false;
-                core.musicStatus.soundStatus
+                core.musicStatus.soundStatus = false;
             }
         }
         else {
@@ -216,32 +216,32 @@ core.prototype.loader = function (callback) {
                         callback();
                         return;
                     }
-                    try {
-                        core.setStartLoadTipText('图片资源加载完毕，加载音频中...');
-                        core.setStartProgressVal(0);
-                        for (var key in core.sounds) {
-                            for (var i = 0; i < core.sounds[key].length; i++) {
-                                core.loadSound(core.sounds[key][i], key, function (soundName, soundType, sound) {
-                                    clearTimeout(core.timeout.loadSoundTimeout);
-                                    soundName = soundName.split('-');
-                                    soundName = soundName[0];
-                                    core.setStartLoadTipText('正在加载音频 ' + soundName + "...")
-                                    core.material.sounds[soundType][soundName] = sound;
-                                    loadSoundNum++;
-                                    // core.setStartLoadTipText(soundName + ' 加载完毕...');
-                                    core.setStartProgressVal(loadSoundNum * (100 / allSoundNum));
-                                    if (loadSoundNum == allSoundNum) {
-                                        core.setStartLoadTipText('音乐资源加载完毕');
-                                        callback();
-                                    }
-                                });
-                            }
+                    core.setStartLoadTipText('图片资源加载完毕，加载音频中...');
+                    core.setStartProgressVal(0);
+                    for (var key in core.sounds) {
+                        for (var i = 0; i < core.sounds[key].length; i++) {
+                            core.setStartLoadTipText('正在加载音频 ' + core.sounds[key][i] + "...")
+                            core.loadSound(core.sounds[key][i], key, function (soundName, soundType, sound) {
+
+                                if (!core.isset(sound)) {
+                                    core.musicStatus.canPlay = false;
+                                    core.musicStatus.soundStatus = false;
+                                    callback();
+                                }
+
+                                // clearTimeout(core.timeout.loadSoundTimeout);
+                                soundName = soundName.split('-');
+                                soundName = soundName[0];
+                                core.material.sounds[soundType][soundName] = sound;
+                                loadSoundNum++;
+                                // core.setStartLoadTipText(soundName + ' 加载完毕...');
+                                core.setStartProgressVal(loadSoundNum * (100 / allSoundNum));
+                                if (loadSoundNum == allSoundNum) {
+                                    core.setStartLoadTipText('音乐资源加载完毕');
+                                    callback();
+                                }
+                            });
                         }
-                    }
-                    catch (e) {
-                        console.log("Exception:" +e);
-                        core.musicStatus.canPlay = false;
-                        callback();
                     }
                 }
             });
@@ -262,23 +262,33 @@ core.prototype.loadImage = function (imgName, callback) {
 }
 
 core.prototype.loadSound = function (soundName, soundType, callback) {
-    soundName = soundName.split('-');
-    core.setStartLoadTipText('加载 ' + soundName[0] + ' 中...');
-    var sound = new Audio('audio');
-    sound.src = 'sounds/' + soundName[0] + '.' + soundType;
-    if (soundName[1] == 'loop') {
-        sound.loop = 'loop';
+    try {
+
+        soundName = soundName.split('-');
+        core.setStartLoadTipText('加载 ' + soundName[0] + ' 中...');
+        var sound = new Audio('audio');
+        sound.src = 'sounds/' + soundName[0] + '.' + soundType;
+        if (soundName[1] == 'loop') {
+            sound.loop = 'loop';
+        }
+        /*
+        if (!('oncanplaythrough' in document ? true : false)) {
+            callback(soundName[0], soundType, sound);
+            return;
+        }
+        */
+        sound.oncanplaythrough = function () {
+            callback(soundName[0], soundType, sound);
+        }
     }
-    if (!('oncanplaythrough' in document ? true : false)) {
-        callback(soundName[0], soundType, sound);
-        return;
+    catch (e) {
+        callback();
     }
-    sound.oncanplaythrough = function () {
-        callback(soundName[0], soundType, sound);
-    }
+    /*
     core.timeout.loadSoundTimeout = window.setTimeout(function () {
         callback(soundName[0], soundType, sound);
     }, 15000);
+    */
 }
 
 core.prototype.isPlaying = function() {
