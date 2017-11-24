@@ -30,13 +30,19 @@ items.prototype.init = function () {
         'shield5': {'cls': 'items', 'name': '神圣盾'},
 
         // 物品
-        'book': {'cls': 'constants', 'name': '怪物手册'},
-        'fly': {'cls': 'constants', 'name': '楼层传送器'},
+        'book': {'cls': 'constants', 'name': '怪物手册', 'text': '可以查看当前楼层各怪物属性。'},
+        'fly': {'cls': 'constants', 'name': '楼层传送器', 'text': '可以自由往来去过的楼层。'},
+        'coin': {'cls': 'constants', 'name': '幸运金币', 'text': '持有时打败怪物可得双倍金币'},
+        'snow': {'cls': 'constants', 'name': '冰冻徽章', 'text': '可以将面前的一块熔岩变成平地'},
+        'cross': {'cls': 'constants', 'name': '十字架', 'text': ''},
 
         // 道具
-        'pickaxe': {'cls': 'tools', 'name': '破墙镐'},
-        'bomb': {'cls': 'tools', 'name': '炸弹'},
-        'centerFly': {'cls': 'tools', 'name': '中心对称飞行器'}
+        'pickaxe': {'cls': 'tools', 'name': '破墙镐', 'text': '可以破坏勇士面前的一堵墙。'},
+        'icePickaxe': {'cls': 'tools', 'name': '破冰稿', 'text': '可以破坏勇士面前的一堵冰墙。'},
+        'bomb': {'cls': 'tools', 'name': '炸弹', 'text': '可以炸掉勇士四周的怪物。'},
+        'centerFly': {'cls': 'tools', 'name': '中心对称飞行器', 'text': '可以飞向当前楼层中心对称的位置。'},
+        'upFly': {'cls': 'tools', 'name': '上楼器', 'text': '可以飞往楼上的相同位置。'},
+        'downFly': {'cls': 'tools', 'name': '下楼器', 'text': '可以飞往楼下的相同位置。'}
     }
 }
 

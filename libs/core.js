@@ -372,7 +372,7 @@ core.prototype.keyUp = function(e) {
 */
 
 core.prototype.onclick = function (x, y) {
-    // console.log("Click: (" + x + "," + y + ")");
+    console.log("Click: (" + x + "," + y + ")");
 
     // 寻路
     if (!core.status.lockControl) {
@@ -521,6 +521,42 @@ core.prototype.onclick = function (x, y) {
             }
         }
         return;
+    }
+
+    // 工具栏
+    if (core.status.event.id == 'toolbox') {
+
+        // 返回
+        if (x>=10 && x<=12 && y==12) {
+            core.closePanel(false);
+            return;
+        }
+
+        var itemId = null;
+        var items = null;
+
+        if (y>=4 && y<=7 && x!=12)
+            items = Object.keys(core.status.hero.items.tools).sort();
+
+        if (y>=9 && y<=12 && x!=12)
+            items = Object.keys(core.status.hero.items.constants).sort();
+
+        if (items==null) return;
+        var index=0;
+        if (y==4||y==5||y==9||y==10) index=parseInt(x/2);
+        else index=6+parseInt(x/2);
+
+        if (index>=items.length) return;
+        itemId=items[index];
+
+        if (itemId==core.status.event.data) {
+            console.log("使用道具："+core.material.items[itemId].name);
+        }
+        else {
+            core.drawToolbox(itemId);
+        }
+        return;
+
     }
 
     // 存读档
@@ -989,14 +1025,12 @@ core.prototype.openDoor = function (id, x, y, needKey) {
     core.stopAutomaticRoute();
     if (needKey) {
         var key = id.replace("Door", "Key");
-        if (!core.hasItem(key)) {
+        if (!core.useKey(key)) {
             if (key == "yellowKey" || key == "blueKey" || key == "redKey")
                 core.drawTip("你没有" + core.material.items[key].name + "！", "normal");
             else core.drawTip("无法开启此门。");
             return;
         }
-        else
-            core.useItem(key);
     }
     // open
     core.playSound("door", "ogg");
@@ -1739,6 +1773,7 @@ core.prototype.updateFg = function () {
  * 物品处理 start
  */
 core.prototype.itemCount = function (itemId) {
+    if (!core.isset(itemId) || !core.isset(core.material.items[itemId])) return 0;
     var itemCls = core.material.items[itemId].cls;
     return core.isset(core.status.hero.items[itemCls][itemId]) ? core.status.hero.items[itemCls][itemId] : 0;
 }
@@ -1756,11 +1791,59 @@ core.prototype.setItem = function (itemId, itemNum) {
     core.status.hero.items[itemCls][itemId] = itemNum;
 }
 
-core.prototype.useItem = function (itemId) {
-    if (!core.hasItem(itemId)) return;
+core.prototype.useKey = function (itemId) {
+    if (!core.hasItem(itemId)) return false;
     var itemCls = core.material.items[itemId].cls;
     core.status.hero.items[itemCls][itemId]--;
     core.updateStatusBar();
+    return true;
+}
+
+core.prototype.useItem = function (itemId) {
+    // 使用道具
+    if (!core.canUseItem(itemId)) return;
+    var itemCls = core.material.items[itemId].cls;
+
+    // 永久道具
+    if (itemCls == 'constants') {
+        if (itemId=='book') {
+            core.drawEnemyBook(1);
+        }
+        if (itemId=='fly') {
+            core.drawFly(core.status.hero.flyRange.indexOf(core.status.floorId));
+        }
+    }
+    // 消耗道具
+    if (itemCls == 'tools') {
+
+    }
+    return;
+}
+
+core.prototype.canUseItem = function (itemId) {
+    // 没有道具
+    if (!core.hasItem(itemId)) return false;
+
+    var itemCls = core.material.items[itemId].cls;
+
+    if (itemId == 'book') return true;
+    if (itemId == 'fly') return core.status.hero.flyRange.indexOf(core.status.floorId)>=0;
+    if (itemId == 'pickaxe') {
+        // 破墙镐
+
+        return false;
+    }
+    if (itemId == 'bomb') {
+        // 炸弹
+
+        return false;
+    }
+    if (itemId == 'centerFly') {
+        // 中心对称
+
+        return false;
+    }
+    return false;
 }
 
 core.prototype.addItem = function (itemId, itemNum) {
@@ -2050,15 +2133,14 @@ core.prototype.openBook = function (need) {
     if (!core.checkStatus('book', need, true, true))
         return;
 
-    core.drawEnemyBook(1);
+    core.useItem('book');
 }
 
 core.prototype.useFly = function (need) {
     if (!core.checkStatus('fly', need, true))
         return;
 
-    var index=core.status.hero.flyRange.indexOf(core.status.floorId);
-    if (index<0) {
+    if (!core.canUseItem('fly')) {
         core.drawTip("楼层传送器好像失效了");
         core.unLockControl();
         core.status.event.data = null;
@@ -2066,15 +2148,17 @@ core.prototype.useFly = function (need) {
         return;
     }
 
-    core.drawFly(index);
+    core.useItem('fly');
+    return;
 }
 
 core.prototype.openToolbox = function (need) {
-    /*
+
     if (!core.checkStatus('toolbox', need))
         return;
-        */
-    core.drawTip("工具箱还未完成");
+
+    // core.drawTip("工具箱还未完成");
+    core.drawToolbox();
 }
 
 core.prototype.save = function(need) {
@@ -2442,6 +2526,103 @@ core.prototype.drawFly = function(page) {
     core.drawThumbnail('ui', core.status.maps[floorId].blocks, 20, 100, 273);
 }
 
+core.prototype.drawToolbox = function(selectId) {
+
+    if (!core.hasItem(selectId))
+        selectId=null;
+    core.status.event.data=selectId;
+
+    core.clearMap('ui', 0, 0, 416, 416);
+    core.setAlpha('ui', 0.85);
+    core.fillRect('ui', 0, 0, 416, 416, '#000000');
+    core.setAlpha('ui', 1);
+    core.setFillStyle('ui', '#DDDDDD');
+    core.setStrokeStyle('ui', '#DDDDDD');
+    core.canvas.ui.lineWidth = 2;
+    core.canvas.ui.strokeWidth = 2;
+
+    // 画线
+    core.canvas.ui.beginPath();
+    core.canvas.ui.moveTo(0, 130);
+    core.canvas.ui.lineTo(416, 130);
+    core.canvas.ui.stroke();
+    core.canvas.ui.beginPath();
+    core.canvas.ui.moveTo(0,129);
+    core.canvas.ui.lineTo(0,105);
+    core.canvas.ui.lineTo(72,105);
+    core.canvas.ui.lineTo(102,129);
+    core.canvas.ui.fill();
+
+    core.canvas.ui.beginPath();
+    core.canvas.ui.moveTo(0, 290);
+    core.canvas.ui.lineTo(416, 290);
+    core.canvas.ui.stroke();
+    core.canvas.ui.beginPath();
+    core.canvas.ui.moveTo(0,289);
+    core.canvas.ui.lineTo(0,265);
+    core.canvas.ui.lineTo(72,265);
+    core.canvas.ui.lineTo(102,289);
+    core.canvas.ui.fill();
+
+    // 文字
+    core.canvas.ui.textAlign = 'left';
+    core.fillText('ui', "消耗道具", 5, 124, '#333333', "bold 16px Verdana");
+    core.fillText('ui', "永久道具", 5, 284);
+
+    // 描述
+    if (core.isset(selectId)) {
+        var item=core.material.items[selectId];
+        core.fillText('ui', item.name, 10, 32, '#FFD700', "bold 20px Verdana")
+        core.fillText('ui', item.text, 10, 62, '#FFFFFF', '17px Verdana');
+        core.fillText('ui', '<继续点击该道具即可进行使用>', 10, 89, '#CCCCCC', '14px Verdana');
+    }
+
+    core.canvas.ui.textAlign = 'right';
+    var images = core.material.images.items;
+    // 消耗道具
+    var tools = Object.keys(core.status.hero.items.tools).sort();
+    for (var i=0;i<tools.length;i++) {
+        var tool=tools[i];
+        var icon=core.material.icons.items[tool];
+        if (i<6) {
+            core.canvas.ui.drawImage(images, 0, icon.loc*icon.size, icon.size, icon.size, 16*(4*i+1)+5, 144+5, icon.size, icon.size)
+            // 个数
+            core.fillText('ui', core.itemCount(tool), 16*(4*i+1)+40, 144+38, '#FFFFFF', "bold 14px Verdana");
+            if (selectId == tool)
+                core.strokeRect('ui', 16*(4*i+1)+1, 144+1, icon.size+8, icon.size+8, '#FFD700');
+        }
+        else {
+            core.canvas.ui.drawImage(images, 0, icon.loc*icon.size, icon.size, icon.size, 16*(4*(i-6)+1)+5, 144+64+5, icon.size, icon.size)
+            if (selectId == tool)
+                core.strokeRect('ui', 16*(4*(i-6)+1)+1, 144+64+1, icon.size+8, icon.size+8, '#FFD700');
+
+        }
+    }
+
+    // 永久道具
+    var constants = Object.keys(core.status.hero.items.constants).sort();
+    for (var i=0;i<constants.length;i++) {
+        var constant=constants[i];
+        var icon=core.material.icons.items[constant];
+        if (i<6) {
+            core.canvas.ui.drawImage(images, 0, icon.loc*icon.size, icon.size, icon.size, 16*(4*i+1)+5, 304+5, icon.size, icon.size)
+            // core.fillText('ui', core.itemCount(constant), 16*(4*i+1)+40, 304+38, '#FFFFFF', "bold 16px Verdana")
+            if (selectId == constant)
+                core.strokeRect('ui', 16*(4*i+1)+1, 304+1, icon.size+8, icon.size+8, '#FFD700');
+        }
+        else {
+            core.canvas.ui.drawImage(images, 0, icon.loc*icon.size, icon.size, icon.size, 16*(4*(i-6)+1)+5, 304+64+5, icon.size, icon.size)
+            if (selectId == constant)
+                core.strokeRect('ui', 16*(4*(i-6)+1)+1, 304+64+1, icon.size+8, icon.size+8, '#FFD700');
+        }
+    }
+
+    // 退出
+    core.canvas.ui.textAlign = 'center';
+    core.fillText('ui', '返回游戏', 370, 403,'#DDDDDD', 'bold 15px Verdana');
+
+}
+
 core.prototype.drawSLPanel = function(page) {
 
     if (page<0) page=0;
@@ -2712,6 +2893,7 @@ core.prototype.resize = function (width, height) {
         core.dom.floorMsgGroup.style.width = (width - 6) + 'px';
         core.dom.statusBar.style.width = (width - 6) + 'px';
         core.dom.statusBar.style.height = top + 'px';
+        core.dom.statusBar.style.fontSize = 16 * scale + 'px';
         for (var i = 0; i < core.dom.gameCanvas.length; i++) {
             core.dom.gameCanvas[i].style.borderTop = '3px #fff solid';
             core.dom.gameCanvas[i].style.borderLeft = '';
@@ -2823,6 +3005,7 @@ core.prototype.resize = function (width, height) {
         core.dom.floorMsgGroup.style.width = '416px';
         core.dom.statusBar.style.width = '416px';
         core.dom.statusBar.style.height = '129px';
+        core.dom.statusBar.style.fontSize = '16px';
         for (var i = 0; i < core.dom.gameCanvas.length; i++) {
             core.dom.gameCanvas[i].style.borderTop = '3px #fff solid';
             core.dom.gameCanvas[i].style.borderLeft = '';
@@ -2934,6 +3117,7 @@ core.prototype.resize = function (width, height) {
         core.dom.floorMsgGroup.style.width = '416px';
         core.dom.statusBar.style.width = '129px';
         core.dom.statusBar.style.height = '416px';
+        core.dom.statusBar.style.fontSize = '16px';
         for (var i = 0; i < core.dom.gameCanvas.length; i++) {
             core.dom.gameCanvas[i].style.borderTop = '';
             core.dom.gameCanvas[i].style.borderLeft = '3px #fff solid';

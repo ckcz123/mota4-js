@@ -237,7 +237,7 @@ html, body {
 .statusLabel {
     text-align: right;
     color: white;
-    font: normal 1.1rem number;
+    font: normal 1.1em number;
     margin: 0;
 }
 
