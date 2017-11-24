@@ -2131,7 +2131,12 @@ core.prototype.saveData = function(dataId) {
 core.prototype.loadData = function (data, callback) {
     core.resetStatus(data.hero, data.hard, data.floorId,
         core.maps.load(data.maps));
-    core.status.shops = core.clone(data.shops);
+    // load shop times
+    for (var shop in core.status.shops) {
+        core.status.shops[shop].times = data.shops[shop].times;
+        core.status.shops[shop].visited = data.shops[shop].visited;
+    }
+    // core.status.shops = core.clone(data.shops);
 
     core.changeFloor(data.floorId, null, data.hero.loc, function() {
         core.setHeroMoveTriggerInterval();
@@ -2434,7 +2439,7 @@ core.prototype.drawFly = function(page) {
 core.prototype.drawSLPanel = function(page) {
 
     if (page<0) page=0;
-    if (page>=50) page=49;
+    if (page>=30) page=29;
     core.status.event.data = page;
     core.status.savePage = page;
 
@@ -2475,7 +2480,7 @@ core.prototype.drawSLPanel = function(page) {
             }
         }
     }
-    core.drawPagination(page+1, 50);
+    core.drawPagination(page+1, 30);
 }
 
 core.prototype.drawThumbnail = function(canvas, blocks, x, y, size, heroLoc) {
