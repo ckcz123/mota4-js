@@ -227,6 +227,8 @@ core.prototype.loader = function (callback) {
                                     callback();
                                 }
 
+                                alert("加载音频 "+soundName+" 成功！");
+
                                 // clearTimeout(core.timeout.loadSoundTimeout);
                                 soundName = soundName.split('-');
                                 soundName = soundName[0];
