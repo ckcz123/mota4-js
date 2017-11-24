@@ -270,12 +270,15 @@ core.prototype.loadSound = function() {
     if (!core.isset(core.material.sounds.mp3)) return;
     // if (core.musicStatus.isIOS) return;
     if (core.musicStatus.loaded) {
+        /*
         if (core.musicStatus.bgmStatus>=0) {
             return;
         }
         core.musicStatus.bgmStatus=1;
         if (core.musicStatus.soundStatus)
             core.playBgm('bgm', 'mp3');
+            */
+
         return;
     }
     core.musicStatus.loaded=true;
@@ -294,7 +297,11 @@ core.prototype.loadSound = function() {
 
 core.prototype.loadSoundItem = function (toLoadList) {
     if (toLoadList.length==0) {
-        if (core.musicStatus.bgmStatus==0) core.musicStatus.bgmStatus=-1;
+        // if (core.musicStatus.bgmStatus==0) core.musicStatus.bgmStatus=-1;
+        if (core.musicStatus.bgmStatus>0) return;
+        core.musicStatus.bgmStatus=1;
+        if (core.musicStatus.soundStatus)
+            core.playBgm('bgm', 'mp3');
         return;
     }
     var item = toLoadList.shift();
