@@ -2127,47 +2127,65 @@ core.prototype.npcAction = function() {
     var data = core.status.event.data.list.shift();
     // 对话
     if (data.type=='text') {
-        core.drawNpcTextBox(data.id, data.content, core.isset(data.isHero) && data.isHero);
+        core.drawTextBox(data.content, core.isset(data.isHero)&&data.isHero?'hero':data.id);
     }
     // TODO 添加其他可能的NPC事件
 
 }
 
-core.prototype.drawNpcTextBox = function(npcId, content, isHero) {
+core.prototype.drawTextBox = function(content, npcId) {
     var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
 
-    core.clearMap('ui', 0, 0, 416, 416);
-    core.setAlpha('ui', 1);
-    core.setFillStyle('ui', background);
+    var contents = content.split('\n');
 
-    var left = 97, top = 64, right = 416 - 2 * left, bottom = 416 - 2 * top;
-    core.fillRect('ui', left, top, right, bottom, background);
+    var isHero = npcId=='hero';
+
+    core.clearMap('ui', 0, 0, 416, 416);
+
+    var left=10, top = Math.min(416-24*(contents.length+1)-65, 250), right = 416 - 2*left, bottom = 416 - 10 - top;
+
+    // var left = 97, top = 64, right = 416 - 2 * left, bottom = 416 - 2 * top;
+    core.setAlpha('ui', 0.85);
+    core.fillRect('ui', left, top, right, bottom, '#000000');
+    core.setAlpha('ui', 1);
     core.strokeRect('ui', left - 1, top - 1, right + 1, bottom + 1, '#FFFFFF', 2);
 
     // 名称
-    core.canvas.ui.textAlign = "center";
-    core.fillText('ui', isHero?core.status.hero.name:core.material.npcs[npcId].name, left + 135, top + 34, '#FFFFFF', 'bold 19px Verdana');
+    core.canvas.ui.textAlign = "left";
 
-    // 动画
-    core.strokeRect('ui', left + 15 - 1, top + 30 - 1, 34, 34, '#DDDDDD', 2);
-    if (isHero) {
-        core.status.boxAnimateObjs = [];
-        core.setBoxAnimate(core.firstData.animateSpeed);
-        core.clearMap('ui', left + 15, top + 30, 32, 32);
-        core.fillRect('ui', left + 15, top + 30, 32, 32, background);
-        var heroIcon = core.material.icons.heros[core.status.hero.id]['down'];
-        core.canvas.ui.drawImage(core.material.images.heros, heroIcon.loc['stop'] * heroIcon.size, heroIcon.loc.iconLoc * heroIcon.size, heroIcon.size, heroIcon.size, left+15, top+30, 32, 32);
+    var content_left = left + 25, content_top = top+45;
+    if (core.isset(npcId)) {
+        content_left = left+63;
+        content_top = top+57;
+        core.fillText('ui', isHero?core.status.hero.name:core.material.npcs[npcId].name, left + 63, top + 30, '#FFD700', 'bold 22px Verdana');
 
+        // 动画
+        core.strokeRect('ui', left + 15 - 1, top + 40 - 1, 34, 34, '#FFD700', 2);
+        if (isHero) {
+            core.status.boxAnimateObjs = [];
+            core.setBoxAnimate(core.firstData.animateSpeed);
+            core.clearMap('ui', left + 15, top + 40, 32, 32);
+            core.fillRect('ui', left + 15, top + 40, 32, 32, background);
+            var heroIcon = core.material.icons.heros[core.status.hero.id]['down'];
+            core.canvas.ui.drawImage(core.material.images.heros, heroIcon.loc['stop'] * heroIcon.size, heroIcon.loc.iconLoc * heroIcon.size, heroIcon.size, heroIcon.size, left+15, top+30, 32, 32);
+        }
+        else {
+            core.status.boxAnimateObjs = [];
+            core.status.boxAnimateObjs.push({
+                'bgx': left + 15, 'bgy': top + 40, 'bgsize': 32,
+                'image': core.material.images.npcs,
+                'x': left + 15, 'y': top + 40, 'icon': core.material.icons.npcs[core.material.npcs[npcId].icon]
+            });
+            core.setBoxAnimate(core.firstData.animateSpeed);
+        }
     }
-    else {
-        core.status.boxAnimateObjs = [];
-        core.status.boxAnimateObjs.push({
-            'bgx': left + 15, 'bgy': top + 30, 'bgsize': 32,
-            'image': core.material.images.npcs,
-            'x': left + 15, 'y': top + 30, 'icon': core.material.icons.npcs[core.material.npcs[npcId].icon]
-        });
-        core.setBoxAnimate(core.firstData.animateSpeed);
+
+    for (var i=0;i<contents.length;i++) {
+        core.fillText('ui', contents[i], content_left, content_top, '#FFFFFF', '16px Verdana');
+        content_top+=24;
     }
+
+    core.fillText('ui', '<点击任意位置继续>', 270, 393, '#CCCCCC', '13px Verdana');
 
     /*
     // 对话
@@ -2190,10 +2208,17 @@ core.prototype.drawNpcTextBox = function(npcId, content, isHero) {
  */
 
 core.prototype.setLocalStorage = function(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
+    try {
+        localStorage.setItem(core.firstData.name + "-" + key, JSON.stringify(value));
+        return true;
+    }
+    catch (e) {
+        console.log(e);
+        return false;
+    }
 }
 core.prototype.getLocalStorage = function(key, defaultValue) {
-    var value = localStorage.getItem(key);
+    var value = localStorage.getItem(core.firstData.name+"-"+key);
     if (core.isset(value)) return JSON.parse(value);
     return defaultValue;
 }
@@ -2356,10 +2381,14 @@ core.prototype.load = function (need) {
 
 core.prototype.doSL = function (id, type) {
     if (type=='save') {
-        core.saveData("save"+id);
-        core.closePanel();
-        core.drawTip('存档成功！');
-        core.setLocalStorage('savePage', core.status.savePage);
+        if (core.saveData("save"+id)) {
+            core.closePanel();
+            core.drawTip('存档成功！');
+            core.setLocalStorage('savePage', core.status.savePage);
+        }
+        else {
+            core.drawTip('存储空间不足，请覆盖已有的存档或在菜单栏中进行清理');
+        }
         return;
     }
     else if (type=='load') {
@@ -2395,7 +2424,7 @@ core.prototype.saveData = function(dataId) {
             'visited': core.status.shops[shop].visited
         }
     }
-    core.setLocalStorage(dataId, data);
+    return core.setLocalStorage(dataId, data);
     // console.log(core.getLocalStorage(dataId));
 }
 

@@ -22,8 +22,8 @@ function main() {
         'data': document.getElementById('data'),
         'statusLabels': document.getElementsByClassName('statusLabel')
     };
-    console.log('加载游戏容器和开始界面dom对象完成 如下');
-    console.log(this.dom);
+    // console.log('加载游戏容器和开始界面dom对象完成 如下');
+    // console.log(this.dom);
     this.loadList = [
         'items',
         'icons',
@@ -33,7 +33,7 @@ function main() {
         'npcs',
         'core'
     ];
-    console.log('加载js文件列表加载完成' + this.loadList);
+    // console.log('加载js文件列表加载完成' + this.loadList);
     this.images = [
         'animates', 'enemys', 'heros', 'items', 'npcs', 'terrains'
     ];
@@ -68,10 +68,11 @@ function main() {
         'hard': document.getElementById("hard")
     }
     this.instance = {};
-    console.log('存储实例变量已声明');
+    // console.log('存储实例变量已声明');
     this.canvas = {};
-    console.log('存储canvas变量已声明');
+    // console.log('存储canvas变量已声明');
     this.firstData = {
+        'name': 'mota4',
         'version': 'Ver 1.0.0 (Beta)',
         'floorId': 'MT0',
         'hero': {
@@ -208,15 +209,15 @@ main.dom.body.onselectstart = function () {
 }
 
 document.onmousemove = function() {
-    main.core.loadSound();
+    try {
+        main.core.loadSound();
+    }catch (e) {}
 }
 
 document.ontouchstart = function() {
-    main.core.loadSound();
-}
-
-document.ontouchend = function() {
-    main.core.loadSound();
+    try {
+        main.core.loadSound();
+    }catch (e) {}
 }
 
 main.dom.data.onmousedown = function (e) {
