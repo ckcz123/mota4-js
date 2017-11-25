@@ -2996,7 +2996,7 @@ core.prototype.getClickLoc = function (x, y) {
         case 'adaptive':
             var zoom = (422 - main.dom.body.clientWidth) / 4.22;
             statusBar.x = 0;
-            statusBar.y = core.dom.statusBar.offsetHeight + 3 - zoom;
+            statusBar.y = parseInt(core.dom.statusBar.style.height) + 3 - zoom;
             console.log("zoom="+zoom);
             size = size - size * zoom / 100;
             break;
