@@ -45,7 +45,7 @@ function main() {
     this.statusBar = {
         'image': {
             'floor': document.getElementById('img-floor'),
-            'heart': document.getElementById("img-heart"),
+            'hp': document.getElementById("img-hp"),
             'atk': document.getElementById("img-atk"),
             'def': document.getElementById("img-def"),
             'mdef': document.getElementById("img-mdef"),
@@ -224,6 +224,7 @@ document.ontouchstart = function() {
 main.dom.data.onmousedown = function (e) {
     e.stopPropagation();
     var loc = main.core.getClickLoc(e.clientX, e.clientY);
+    if (loc==null) return;
     var x = parseInt(loc.x / loc.size), y = parseInt(loc.y / loc.size);
     main.core.onclick(x, y);
 }
@@ -231,6 +232,7 @@ main.dom.data.onmousedown = function (e) {
 main.dom.data.ontouchstart = function (e) {
     e.preventDefault();
     var loc = main.core.getClickLoc(e.targetTouches[0].clientX, e.targetTouches[0].clientY);
+    if (loc==null) return;
     var x = parseInt(loc.x / loc.size), y = parseInt(loc.y / loc.size);
     main.core.onclick(x, y);
 }

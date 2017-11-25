@@ -40,6 +40,16 @@ function core() {
         'playedSound': null,
         'playedBgm': null,
     }
+    // 各元素位置、大小信息
+    this.position = {
+        'gameGroup': {},
+        'canvas': {},
+        'statusBar': {},
+        'toolBar': {},
+        'items': {},
+        'scale': 1.0,
+        'screenMode': 'adaptive',
+    }
     this.initStatus = {
         'played': false,
 
@@ -62,9 +72,6 @@ function core() {
         'floorId': null,
         'thisMap': null,
         'maps': null,
-
-        // 屏幕状态
-        'screenMode': 'adaptive',
 
         // 勇士状态
         'heroMoving': false,
@@ -2990,30 +2997,30 @@ core.prototype.isset = function (val) {
 }
 
 core.prototype.getClickLoc = function (x, y) {
+
+    if (!core.isset(core.position.canvas.top)) return null;
+
     var statusBar = {'x': 0, 'y': 0};
     var size = 32;
-    switch (core.status.screenMode) {
+    switch (core.position.screenMode) {
         case 'adaptive':
-            var zoom = (422 - main.dom.body.clientWidth) / 4.22;
+            size = size * core.position.scale;
             statusBar.x = 0;
-            statusBar.y = parseInt(core.dom.statusBar.style.height) + 3 - zoom;
-            console.log("zoom="+zoom);
-            size = size - size * zoom / 100;
+            // 这里的3是指statusBar和游戏画布之间的白线宽度
+            statusBar.y = core.position.statusBar.height + 3;
             break;
         case 'vertical':
             statusBar.x = 0;
-            statusBar.y = core.dom.statusBar.offsetHeight + 3;
+            statusBar.y = core.position.statusBar.height + 3;
             break;
         case 'horizontal':
-            statusBar.x = core.dom.statusBar.offsetWidth + 3;
+            statusBar.x = core.position.statusBar.width + 3;
             statusBar.y = 0;
             break;
     }
-    var left = core.dom.gameGroup.offsetLeft + statusBar.x;
-    var top = core.dom.gameGroup.offsetTop + statusBar.y;
-    console.log("left="+left+", top="+top);
+    var left = core.position.gameGroup.left + statusBar.x;
+    var top = core.position.gameGroup.top + statusBar.y;
     var loc={'x': x - left, 'y': y - top, 'size': size};
-    console.log(loc);
     return loc;
 }
 
@@ -3101,362 +3108,207 @@ core.prototype.hide = function (obj, speed, callback) {
     }, speed);
 }
 
-core.prototype.resize = function (width, height) {
+core.prototype.resize = function(width, height) {
 
-    // show image
+    // 画布大小
+    var canvasWidth = 416;
+    // 竖屏状态下，默认StatusBar高度（不计算边框）
+    var statusBarHeight = 84;
+    // 横屏状态下，默认StatusBar宽度（不计算边框）
+    var statusBarWidth = 132;
+    // 竖屏状态下，底端默认ToolBar高度（不计算边框）
+    var toolBarHeight = 49;
 
-    for (var x in core.statusBar.image) {
-        core.statusBar.image[x].style.display = 'block';
-    }
+    // 宽度不够，竖直适配
+    if (width < 3 + statusBarWidth + 3 + 416 + 3) {
 
-    var halfWidth = width / 2;
-    if (width < 422) {
-        var zoom = (422 - width) / 4.22;
-        var scale = 1 - zoom / 100;
-        var top = (84 - zoom);
-        // var helfmoveBtnGroupWidth = (109 - zoom) / 2;
-        core.dom.gameGroup.style.top = '3px';
-        core.dom.gameGroup.style.left = '3px';
-        core.dom.gameGroup.style.width = (width - 6) + 'px';
-        core.dom.gameGroup.style.height = 555 * scale + 'px';
-        //core.dom.startBackground.style.height = (top + width) + 'px';
-        //core.dom.startButtonGroup.style.bottom = '15px';
-        //core.dom.startButtonGroup.style.fontSize = '1rem';
-        core.dom.floorMsgGroup.style.width = (width - 6) + 'px';
-        core.dom.statusBar.style.width = (width - 6) + 'px';
-        core.dom.statusBar.style.height = top + 'px';
-        core.dom.statusBar.style.fontSize = 16 * scale + 'px';
-        core.dom.toolBar.style.display = 'block';
-        core.dom.toolBar.style.top = 503 * scale + 'px';
-        core.dom.toolBar.style.width = (width - 6) + 'px';
-        core.dom.toolBar.style.height = 49 * scale + 'px';
-        for (var i = 0; i < core.dom.gameCanvas.length; i++) {
-            core.dom.gameCanvas[i].style.borderTop = '3px #fff solid';
-            core.dom.gameCanvas[i].style.borderLeft = '';
-            core.dom.gameCanvas[i].style.top = top + 'px';
-            core.dom.gameCanvas[i].style.left = '0px';
-            core.dom.gameCanvas[i].style.right = '0px';
-            core.dom.gameCanvas[i].style.width = (width - 6) + 'px';
-            core.dom.gameCanvas[i].style.height = (width - 6) + 'px';
+        var scale = 1;
+
+        // 自适应
+        if (width < 3 + canvasWidth + 3) {
+            core.position.screenMode = 'adaptive';
+
+            // 放缩比
+            scale = width/422;
+
+            // 3px border
+            core.position.gameGroup = {
+                'top': 3, 'left': 3,
+            };
+        }
+        else {
+            core.position.screenMode = 'vertical';
+            scale = 1.0;
+            // 3px border
+            core.position.gameGroup = {
+                'top': 3, 'left': (width-canvasWidth)/2,
+            };
         }
 
+        core.position.scale = scale;
+        canvasWidth *= scale;
+        statusBarHeight *= scale;
+        toolBarHeight *= scale;
 
-        // Draw StatusBar
+        core.position.gameGroup.width = canvasWidth;
 
-        // floor
-        core.statusBar.image.floor.style.width = 32 * scale + "px";
-        core.statusBar.image.floor.style.height = 32 * scale + "px";
-        core.statusBar.image.floor.style.top = 8 * scale + "px";
-        core.statusBar.image.floor.style.left = 8 * scale + "px";
-        core.statusBar.floor.style.top = 16 * scale + "px";
-        core.statusBar.floor.style.left = 48 * scale + "px";
-        // hp
-        core.statusBar.image.heart.style.width = 32 * scale + "px";
-        core.statusBar.image.heart.style.height = 32 * scale + "px";
-        core.statusBar.image.heart.style.top = 8 * scale + "px";
-        core.statusBar.image.heart.style.left = 90 * scale + "px";
-        core.statusBar.hp.style.top = 16 * scale + "px";
-        core.statusBar.hp.style.left = 130 * scale + "px";
-        // atk
-        core.statusBar.image.atk.style.width = 32 * scale + "px";
-        core.statusBar.image.atk.style.height = 32 * scale + "px";
-        core.statusBar.image.atk.style.top = 8 * scale + "px";
-        core.statusBar.image.atk.style.left = 210 * scale + "px";
-        core.statusBar.atk.style.top = 16 * scale + "px";
-        core.statusBar.atk.style.left = 246 * scale + "px";
-        // def
-        core.statusBar.image.def.style.width = 32 * scale + "px";
-        core.statusBar.image.def.style.height = 32 * scale + "px";
-        core.statusBar.image.def.style.top = 8 * scale + "px";
-        core.statusBar.image.def.style.left = 316 * scale + "px";
-        core.statusBar.def.style.top = 16 * scale + "px";
-        core.statusBar.def.style.left = 352 * scale + "px";
-        // mdef
-        core.statusBar.image.mdef.style.width = 32 * scale + "px";
-        core.statusBar.image.mdef.style.height = 32 * scale + "px";
-        core.statusBar.image.mdef.style.top = 44 * scale + "px";
-        core.statusBar.image.mdef.style.left = 8 * scale + "px";
-        core.statusBar.mdef.style.top = 52 * scale + "px";
-        core.statusBar.mdef.style.left = 48 * scale + "px";
-        // money
-        core.statusBar.image.money.style.width = 32 * scale + "px";
-        core.statusBar.image.money.style.height = 32 * scale + "px";
-        core.statusBar.image.money.style.top = 44 * scale + "px";
-        core.statusBar.image.money.style.left = 138 * scale + "px";
-        core.statusBar.money.style.top = 52 * scale + "px";
-        core.statusBar.money.style.left = 178 * scale + "px";
-        // keys
-        core.statusBar.yellowKey.style.top = 52 * scale + "px";
-        core.statusBar.yellowKey.style.left = 268 * scale + "px";
-        core.statusBar.blueKey.style.top = 52 * scale + "px";
-        core.statusBar.blueKey.style.left = 308 * scale + "px";
-        core.statusBar.redKey.style.top = 52 * scale + "px";
-        core.statusBar.redKey.style.left = 348 * scale + "px";
-        // book
-        core.statusBar.image.book.style.width = 32 * scale + "px";
-        core.statusBar.image.book.style.height = 32 * scale + "px";
-        core.statusBar.image.book.style.top = 516 * scale + "px";
-        core.statusBar.image.book.style.left = 8 * scale + "px";
-        // fly
-        core.statusBar.image.fly.style.width = 32 * scale + "px";
-        core.statusBar.image.fly.style.height = 32 * scale + "px";
-        core.statusBar.image.fly.style.top = 516 * scale + "px";
-        core.statusBar.image.fly.style.left = 54 * scale + "px";
-        // toolbox
-        core.statusBar.image.toolbox.style.width = 32 * scale + "px";
-        core.statusBar.image.toolbox.style.height = 32 * scale + "px";
-        core.statusBar.image.toolbox.style.top = 516 * scale + "px";
-        core.statusBar.image.toolbox.style.left = 100 * scale + "px";
-        // save
-        core.statusBar.image.save.style.width = 32 * scale + "px";
-        core.statusBar.image.save.style.height = 32 * scale + "px";
-        core.statusBar.image.save.style.top = 516 * scale + "px";
-        core.statusBar.image.save.style.left = 146 * scale + "px";
-        // load
-        core.statusBar.image.load.style.width = 32 * scale + "px";
-        core.statusBar.image.load.style.height = 32 * scale + "px";
-        core.statusBar.image.load.style.top = 516 * scale + "px";
-        core.statusBar.image.load.style.left = 192 * scale + "px";
-        // setting
-        core.statusBar.image.settings.style.width = 32 * scale + "px";
-        core.statusBar.image.settings.style.height = 32 * scale + "px";
-        core.statusBar.image.settings.style.top = 516 * scale + "px";
-        core.statusBar.image.settings.style.left = 238 * scale + "px";
-        // hard
-        core.statusBar.hard.style.top = 522 * scale + "px";
-        core.statusBar.hard.style.left = 300 * scale + "px";
-
-        core.status.screenMode = 'adaptive';
-        console.log('已调整为自适应屏');
-    }
-    else if (width < 548) {
-        core.dom.gameGroup.style.left = (halfWidth - 208) + 'px';
-        core.dom.gameGroup.style.top = '3px';
-        core.dom.gameGroup.style.width = '416px';
-        core.dom.gameGroup.style.height = '555px';
-        //core.dom.startBackground.style.height = '548px';
-        //core.dom.startButtonGroup.style.bottom = '20px';
-        //core.dom.startButtonGroup.style.fontSize = '1.2rem';
-        core.dom.floorMsgGroup.style.width = '416px';
-        core.dom.statusBar.style.width = '416px';
-        core.dom.statusBar.style.height = '84px';
-        core.dom.statusBar.style.fontSize = '16px';
-        core.dom.toolBar.style.display = 'block';
-        core.dom.toolBar.style.top = '503px';
-        core.dom.toolBar.style.width = '416px';
-        core.dom.toolBar.style.height = '49px';
-
-        for (var i = 0; i < core.dom.gameCanvas.length; i++) {
-            core.dom.gameCanvas[i].style.borderTop = '3px #fff solid';
-            core.dom.gameCanvas[i].style.borderLeft = '';
-            core.dom.gameCanvas[i].style.top = '84px';
-            core.dom.gameCanvas[i].style.left = '0px';
-            core.dom.gameCanvas[i].style.right = '0px';
-            core.dom.gameCanvas[i].style.width = '416px';
-            core.dom.gameCanvas[i].style.height = '416px';
+        // 这几项都是相对gameGroup的位置
+        core.position.statusBar = {
+            'width': canvasWidth, 'height': statusBarHeight,
+            'fontSize': 16 * scale
+        }
+        core.position.canvas = {
+            'borderTop': '3px #fff solid', 'borderLeft': '',
+            'top': statusBarHeight, // 3px计算在内边框
+            'left': 0, 'width': canvasWidth, 'height': canvasWidth
+        }
+        core.position.toolBar = {
+            'display': 'block',
+            'top': statusBarHeight + 3 + canvasWidth,
+            'width': canvasWidth, 'height': toolBarHeight
         }
 
+        core.position.gameGroup.height = statusBarHeight + 3 + canvasWidth + 3 + toolBarHeight;
 
-        // Draw StatusBar
+        var icon_firstline = 8 * scale, icon_secondline = 44 * scale;
+        var icon_toolline = core.position.toolBar.top + 13 * scale;
+        var icon_toolline_per = 46 * scale;
 
-        // floor
-        core.statusBar.image.floor.style.width = "32px";
-        core.statusBar.image.floor.style.height = "32px";
-        core.statusBar.image.floor.style.top = "8px";
-        core.statusBar.image.floor.style.left = "8px";
-        core.statusBar.floor.style.top = "16px";
-        core.statusBar.floor.style.left = "48px";
-        // hp
-        core.statusBar.image.heart.style.width = "32px";
-        core.statusBar.image.heart.style.height = "32px";
-        core.statusBar.image.heart.style.top = "8px";
-        core.statusBar.image.heart.style.left = "90px";
-        core.statusBar.hp.style.top = "16px";
-        core.statusBar.hp.style.left = "130px";
-        // atk
-        core.statusBar.image.atk.style.width = "32px";
-        core.statusBar.image.atk.style.height = "32px";
-        core.statusBar.image.atk.style.top = "8px";
-        core.statusBar.image.atk.style.left = "210px";
-        core.statusBar.atk.style.top = "16px";
-        core.statusBar.atk.style.left = "246px";
-        // def
-        core.statusBar.image.def.style.width = "32px";
-        core.statusBar.image.def.style.height = "32px";
-        core.statusBar.image.def.style.top = "8px";
-        core.statusBar.image.def.style.left = "316px";
-        core.statusBar.def.style.top = "16px";
-        core.statusBar.def.style.left = "352px";
-        // mdef
-        core.statusBar.image.mdef.style.width = "32px";
-        core.statusBar.image.mdef.style.height = "32px";
-        core.statusBar.image.mdef.style.top = "44px";
-        core.statusBar.image.mdef.style.left = "8px";
-        core.statusBar.mdef.style.top = "52px";
-        core.statusBar.mdef.style.left = "48px";
-        // money
-        core.statusBar.image.money.style.width = "32px";
-        core.statusBar.image.money.style.height = "32px";
-        core.statusBar.image.money.style.top = "44px";
-        core.statusBar.image.money.style.left = "138px";
-        core.statusBar.money.style.top = "52px";
-        core.statusBar.money.style.left = "178px";
-        // keys
-        core.statusBar.yellowKey.style.top = "52px";
-        core.statusBar.yellowKey.style.left = "268px";
-        core.statusBar.blueKey.style.top = "52px";
-        core.statusBar.blueKey.style.left = "308px";
-        core.statusBar.redKey.style.top = "52px";
-        core.statusBar.redKey.style.left = "348px";
-        // book
-        core.statusBar.image.book.style.width = "32px";
-        core.statusBar.image.book.style.height = "32px";
-        core.statusBar.image.book.style.top = "514px";
-        core.statusBar.image.book.style.left = "8px";
-        // fly
-        core.statusBar.image.fly.style.width = "32px";
-        core.statusBar.image.fly.style.height = "32px";
-        core.statusBar.image.fly.style.top = "514px";
-        core.statusBar.image.fly.style.left = "54px";
-        // toolbox
-        core.statusBar.image.toolbox.style.width = "32px";
-        core.statusBar.image.toolbox.style.height = "32px";
-        core.statusBar.image.toolbox.style.top = "516px";
-        core.statusBar.image.toolbox.style.left = "100px";
-        // save
-        core.statusBar.image.save.style.width = "32px";
-        core.statusBar.image.save.style.height = "32px";
-        core.statusBar.image.save.style.top = "516px";
-        core.statusBar.image.save.style.left = "146px";
-        // load
-        core.statusBar.image.load.style.width = "32px";
-        core.statusBar.image.load.style.height = "32px";
-        core.statusBar.image.load.style.top = "516px";
-        core.statusBar.image.load.style.left = "192px";
-        // setting
-        core.statusBar.image.settings.style.width = "32px";
-        core.statusBar.image.settings.style.height = "32px";
-        core.statusBar.image.settings.style.top = "516px";
-        core.statusBar.image.settings.style.left = "238px";
-        // hard
-        core.statusBar.hard.style.top = "522px";
-        core.statusBar.hard.style.left = "300px";
+        var text_firstline = 16 * scale, text_secondline = 52 * scale;
+        var text_toolline = core.position.toolBar.top + 18 * scale;
 
-        core.status.screenMode = 'vertical';
-        console.log('已调整为竖屏');
+        core.position.items = {
+            'image': {
+                'size': 32*scale,
+                'floor': {'top': icon_firstline, 'left': 8 * scale},
+                'hp': {'top': icon_firstline, 'left': 90 * scale},
+                'atk': {'top': icon_firstline, 'left': 210 * scale},
+                'def': {'top': icon_firstline, 'left': 316 * scale},
+                'mdef': {'top': icon_secondline, 'left': 8 * scale},
+                'money': {'top': icon_secondline, 'left': 138 * scale},
+                'book': {'top': icon_toolline, 'left': 8 * scale},
+                'fly': {'top': icon_toolline, 'left': 8 * scale + icon_toolline_per},
+                'toolbox': {'top': icon_toolline, 'left': 8 * scale + icon_toolline_per * 2},
+                'save': {'top': icon_toolline, 'left': 8 * scale + icon_toolline_per * 3},
+                'load': {'top': icon_toolline, 'left': 8 * scale + icon_toolline_per * 4},
+                'settings': {'top': icon_toolline, 'left': 8 * scale + icon_toolline_per * 5}
+            },
+            'floor': {'top': text_firstline, 'left': 48 * scale},
+            'hp': {'top': text_firstline, 'left': 130 * scale},
+            'atk': {'top': text_firstline, 'left': 246 * scale},
+            'def': {'top': text_firstline, 'left': 352 * scale},
+            'mdef': {'top': text_secondline, 'left': 48 * scale},
+            'money': {'top': text_secondline, 'left': 178 * scale},
+            'yellowKey': {'top': text_secondline, 'left': 268 * scale},
+            'blueKey': {'top': text_secondline, 'left': 308 * scale},
+            'redKey': {'top': text_secondline, 'left': 348 * scale},
+            'hard': {'top': text_toolline, 'left': 300*scale}
+        }
     }
+
+    // 宽度够了，横向适配
     else {
-        core.dom.gameGroup.style.left = (halfWidth - 274) + 'px';
-        core.dom.gameGroup.style.top = (height / 2 - 208) + 'px';
-        core.dom.gameGroup.style.width = '548px';
-        core.dom.gameGroup.style.height = '416px';
-        //core.dom.startBackground.style.height = '416px';
-        //core.dom.startButtonGroup.style.bottom = '20px';
-        //core.dom.startButtonGroup.style.fontSize = '1.4rem';
-        core.dom.floorMsgGroup.style.width = '416px';
-        core.dom.statusBar.style.width = '129px';
-        core.dom.statusBar.style.height = '416px';
-        core.dom.statusBar.style.fontSize = '16px';
-        core.dom.toolBar.style.display = 'none';
-        for (var i = 0; i < core.dom.gameCanvas.length; i++) {
-            core.dom.gameCanvas[i].style.borderTop = '';
-            core.dom.gameCanvas[i].style.borderLeft = '3px #fff solid';
-            core.dom.gameCanvas[i].style.top = '0px';
-            core.dom.gameCanvas[i].style.left = '129px';
-            core.dom.gameCanvas[i].style.right = '0px';
-            core.dom.gameCanvas[i].style.width = '416px';
-            core.dom.gameCanvas[i].style.height = '416px';
+        core.position.scale = 1;
+        core.position.screenMode = 'horizontal';
+
+        var totalWidth = statusBarWidth + 3 + canvasWidth;
+
+        core.position.gameGroup = {
+            'top': (height-canvasWidth)/2, 'left': (width-totalWidth)/2,
+            'width': totalWidth, 'height': canvasWidth
         }
 
-        // Draw StatusBar
+        // 这几项都是相对gameGroup的位置
+        core.position.statusBar = {
+            'width': statusBarWidth, 'height': canvasWidth,
+            'fontSize': 16
+        }
+        core.position.canvas = {
+            'borderTop': '', 'borderLeft': '3px #fff solid',
+            'top': 0, 'left': statusBarWidth, 'width': canvasWidth, 'height': canvasWidth
+        }
+        core.position.toolBar = {
+            'display': 'none', 'top': 0, 'left': 0, 'width': 0, 'height': 0
+        }
 
-        // floor
-        core.statusBar.image.floor.style.width = "32px";
-        core.statusBar.image.floor.style.height = "32px";
-        core.statusBar.image.floor.style.top = "20px";
-        core.statusBar.image.floor.style.left = "8px";
-        core.statusBar.floor.style.top = "30px";
-        core.statusBar.floor.style.left = "50px";
-        // hp
-        core.statusBar.image.heart.style.width = "32px";
-        core.statusBar.image.heart.style.height = "32px";
-        core.statusBar.image.heart.style.top = "60px";
-        core.statusBar.image.heart.style.left = "8px";
-        core.statusBar.hp.style.top = "68px";
-        core.statusBar.hp.style.left = "50px";
-        // atk
-        core.statusBar.image.atk.style.width = "32px";
-        core.statusBar.image.atk.style.height = "32px";
-        core.statusBar.image.atk.style.top = "100px";
-        core.statusBar.image.atk.style.left = "8px";
-        core.statusBar.atk.style.top = "108px";
-        core.statusBar.atk.style.left = "50px";
-        // def
-        core.statusBar.image.def.style.width = "32px";
-        core.statusBar.image.def.style.height = "32px";
-        core.statusBar.image.def.style.top = "140px";
-        core.statusBar.image.def.style.left = "8px";
-        core.statusBar.def.style.top = "148px";
-        core.statusBar.def.style.left = "50px";
-        // mdef
-        core.statusBar.image.mdef.style.width = "32px";
-        core.statusBar.image.mdef.style.height = "32px";
-        core.statusBar.image.mdef.style.top = "180px";
-        core.statusBar.image.mdef.style.left = "8px";
-        core.statusBar.mdef.style.top = "188px";
-        core.statusBar.mdef.style.left = "50px";
-        // money
-        core.statusBar.image.money.style.width = "32px";
-        core.statusBar.image.money.style.height = "32px";
-        core.statusBar.image.money.style.top = "220px";
-        core.statusBar.image.money.style.left = "8px";
-        core.statusBar.money.style.top = "228px";
-        core.statusBar.money.style.left = "50px";
-        // keys
-        core.statusBar.yellowKey.style.top = "268px";
-        core.statusBar.yellowKey.style.left = "8px";
-        core.statusBar.blueKey.style.top = "268px";
-        core.statusBar.blueKey.style.left = "50px";
-        core.statusBar.redKey.style.top = "268px";
-        core.statusBar.redKey.style.left = "92px";
-        // book
-        core.statusBar.image.book.style.width = "32px";
-        core.statusBar.image.book.style.height = "32px";
-        core.statusBar.image.book.style.top = "303px";
-        core.statusBar.image.book.style.left = "8px";
-        // fly
-        core.statusBar.image.fly.style.width = "32px";
-        core.statusBar.image.fly.style.height = "32px";
-        core.statusBar.image.fly.style.top = "303px";
-        core.statusBar.image.fly.style.left = "50px";
-        // toolbox
-        core.statusBar.image.toolbox.style.width = "32px";
-        core.statusBar.image.toolbox.style.height = "32px";
-        core.statusBar.image.toolbox.style.top = "303px";
-        core.statusBar.image.toolbox.style.left = "92px";
-        // save
-        core.statusBar.image.save.style.width = "32px";
-        core.statusBar.image.save.style.height = "32px";
-        core.statusBar.image.save.style.top = "343px";
-        core.statusBar.image.save.style.left = "8px";
-        // load
-        core.statusBar.image.load.style.width = "32px";
-        core.statusBar.image.load.style.height = "32px";
-        core.statusBar.image.load.style.top = "343px";
-        core.statusBar.image.load.style.left = "50px";
-        // setting
-        core.statusBar.image.settings.style.width = "32px";
-        core.statusBar.image.settings.style.height = "32px";
-        core.statusBar.image.settings.style.top = "343px";
-        core.statusBar.image.settings.style.left = "92px";
-        // hard
-        core.statusBar.hard.style.left = "22px";
-        core.statusBar.hard.style.top = "383px";
+        var first_col = 8, second_col = 50, third_col = 92;
+        var first_icon_row = 20, first_text_row = 28, first_tool_row = 303, per_row = 40;
 
-        core.status.screenMode = 'horizontal';
-        console.log('已调整为横屏');
+        core.position.items = {
+            'image': {
+                'size': 32,
+                'floor': {'top': first_icon_row, 'left': first_col},
+                'hp': {'top': first_icon_row + per_row, 'left': first_col},
+                'atk': {'top': first_icon_row + per_row * 2, 'left': first_col},
+                'def': {'top': first_icon_row + per_row * 3, 'left': first_col},
+                'mdef': {'top': first_icon_row + per_row * 4, 'left': first_col},
+                'money': {'top': first_icon_row + per_row * 5, 'left': first_col},
+                'book': {'top': first_tool_row, 'left': first_col},
+                'fly': {'top': first_tool_row, 'left': second_col},
+                'toolbox': {'top': first_tool_row, 'left': third_col},
+                'save': {'top': first_tool_row + per_row, 'left': first_col},
+                'load': {'top': first_tool_row + per_row, 'left': second_col},
+                'settings': {'top': first_tool_row + per_row, 'left': third_col}
+            },
+            'floor': {'top': first_text_row, 'left': second_col},
+            'hp': {'top': first_text_row + per_row, 'left': second_col},
+            'atk': {'top': first_text_row + per_row * 2, 'left': second_col},
+            'def': {'top': first_text_row + per_row * 3, 'left': second_col},
+            'mdef': {'top': first_text_row + per_row * 4, 'left': second_col},
+            'money': {'top': first_text_row + per_row * 5, 'left': second_col},
+            'yellowKey': {'top': first_text_row + per_row * 6, 'left': first_col},
+            'blueKey':{'top': first_text_row + per_row * 6, 'left': second_col},
+            'redKey': {'top': first_text_row + per_row * 6, 'left': third_col},
+            'hard': {'top': 383, 'left': 22}
+        }
     }
-    // core.dom.startBackground.style.left = '-' + ((core.dom.startBackground.offsetWidth - core.dom.gameGroup.offsetWidth) / 2) + 'px';
+
+    core.resetSize();
+}
+
+core.prototype.resetSize = function () {
+
+    core.dom.gameGroup.style.left = core.position.gameGroup.left + "px";
+    core.dom.gameGroup.style.top = core.position.gameGroup.top + "px";
+    core.dom.gameGroup.style.width = core.position.gameGroup.width + "px";
+    core.dom.gameGroup.style.height = core.position.gameGroup.height + "px";
+
+    core.dom.statusBar.style.width = core.position.statusBar.width + "px";
+    core.dom.statusBar.style.height = core.position.statusBar.height + "px";
+    core.dom.statusBar.style.fontSize = core.position.statusBar.fontSize + "px";
+
+    core.dom.toolBar.style.top = core.position.toolBar.top + "px";
+    core.dom.toolBar.style.width = core.position.toolBar.width + "px";
+    core.dom.toolBar.style.height = core.position.toolBar.height + "px";
+    core.dom.toolBar.style.display = core.position.toolBar.display;
+
+    core.dom.floorMsgGroup.style.width = core.position.canvas.width + "px";
+
+    for (var i = 0; i < core.dom.gameCanvas.length; i++) {
+        core.dom.gameCanvas[i].style.borderTop = core.position.canvas.borderTop;
+        core.dom.gameCanvas[i].style.borderLeft = core.position.canvas.borderLeft;
+        core.dom.gameCanvas[i].style.top = core.position.canvas.top + "px";
+        core.dom.gameCanvas[i].style.left = core.position.canvas.left + "px";
+        core.dom.gameCanvas[i].style.width = core.position.canvas.width + "px";
+        core.dom.gameCanvas[i].style.height = core.position.canvas.height + "px";
+    }
+
+    // images
+    for (var item in core.statusBar.image) {
+        core.statusBar.image[item].style.display = 'block';
+        core.statusBar.image[item].style.width = core.position.items.image.size + "px";
+        core.statusBar.image[item].style.height = core.position.items.image.size + "px";
+        core.statusBar.image[item].style.top = core.position.items.image[item].top + "px";
+        core.statusBar.image[item].style.left = core.position.items.image[item].left + "px";
+    }
+
+    // texts
+    for (var item in core.statusBar) {
+        if (item == 'image') continue;
+        core.statusBar[item].style.top = core.position.items[item].top + "px";
+        core.statusBar[item].style.left = core.position.items[item].left + "px";
+    }
+
 }
 
 /**
