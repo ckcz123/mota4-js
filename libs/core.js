@@ -685,6 +685,22 @@ core.prototype.onclick = function (x, y) {
         return;
     }
 
+    // NPC
+    if (core.status.event.id == 'npc') {
+
+        var data = core.status.event.data.current;
+        if (core.isset(data)) {
+
+            // 对话，任意位置继续
+            if (data.type == 'text') {
+                core.npcAction();
+                return;
+            }
+
+        }
+
+    }
+
 }
 
 /**
@@ -1292,6 +1308,7 @@ core.prototype.calDamage = function (hero_atk, hero_def, hero_mdef, mon_hp, mon_
 
     // 魔防不回血
     return ans <= 0 ? 0 : ans;
+
 }
 
 core.prototype.changeFloor = function (floorId, stair, heroLoc, callback) {
@@ -2125,6 +2142,8 @@ core.prototype.npcAction = function() {
     }
 
     var data = core.status.event.data.list.shift();
+    core.status.event.data.current = data;
+
     // 对话
     if (data.type=='text') {
         core.drawTextBox(data.content, core.isset(data.isHero)&&data.isHero?'hero':data.id);
@@ -2252,10 +2271,8 @@ core.prototype.clone = function (data) {
 }
 
 core.prototype.formatDate = function(date) {
-    if (!core.isset(date)) {
-        return "";
-    }
-    return date.getFullYear()+"-"+core.setTwoDigits(date.getMonth())+"-"+core.setTwoDigits(date.getDay())+" "
+    if (!core.isset(date)) return "";
+    return date.getFullYear()+"-"+core.setTwoDigits(date.getMonth()+1)+"-"+core.setTwoDigits(date.getDate())+" "
         +core.setTwoDigits(date.getHours())+":"+core.setTwoDigits(date.getMinutes())+":"+core.setTwoDigits(date.getSeconds());
 }
 
