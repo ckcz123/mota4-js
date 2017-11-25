@@ -3204,10 +3204,11 @@ core.prototype.resize = function(clientWidth, clientHeight) {
     var statusBarHeight = 80;
     // 竖屏状态下，底端默认ToolBar高度（不计算边框）
     var toolBarHeight = 49;
-    //适配宽度阈值， 6为两倍的边框宽度
 
     // 横屏状态下，默认StatusBar宽度（不计算边框）
     var statusBarWidth = 129;
+	
+    //适配宽度阈值， 6为两倍的边框宽度
     var ADAPT_WIDTH = canvasWidth + 6;
 
     var width = clientWidth;
@@ -3354,7 +3355,7 @@ core.prototype.resize = function(clientWidth, clientHeight) {
                 'yellowKey': {'top': first_text_row + per_row * 6, 'left': first_col},
                 'blueKey':{'top': first_text_row + per_row * 6, 'left': second_col},
                 'redKey': {'top': first_text_row + per_row * 6, 'left': third_col},
-                'hard': {'top': 383, 'left': 22}
+                'hard': {'top': 383*scale, 'left': 22*scale}
             }
         }
         
