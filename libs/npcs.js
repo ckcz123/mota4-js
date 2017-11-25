@@ -26,7 +26,7 @@ npcs.prototype.getEffect = function (npcid, times) {
                 return [
                     {
                         'type': 'text', 'id': 'npc1',
-                        'content': '欢迎来到本塔！\n本塔由艾之葵使用html5+js编写而成，支持\nPC/Android/iOS全平台适配，可在任何平\n台上进行游戏哦！\n\n下面是本塔的一些注意事项，请仔细阅读。'
+                        'content': '欢迎来到本塔！\n这座塔是由艾之葵使用html5+js编写而成，\nPC/Android/iOS全平台适配，可在任何平\n台上进行游戏哦！\n\n下面是本塔的一些注意事项，请仔细阅读。'
                     },
                     {
                         'type': 'text', 'id': 'npc1',

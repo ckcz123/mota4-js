@@ -2997,6 +2997,7 @@ core.prototype.getClickLoc = function (x, y) {
             var zoom = (422 - main.dom.body.clientWidth) / 4.22;
             statusBar.x = 0;
             statusBar.y = core.dom.statusBar.offsetHeight + 3 - zoom;
+            console.log("zoom="+zoom);
             size = size - size * zoom / 100;
             break;
         case 'vertical':
@@ -3010,7 +3011,10 @@ core.prototype.getClickLoc = function (x, y) {
     }
     var left = core.dom.gameGroup.offsetLeft + statusBar.x;
     var top = core.dom.gameGroup.offsetTop + statusBar.y;
-    return {'x': x - left, 'y': y - top, 'size': size};
+    console.log("left="+left+", top="+top);
+    var loc={'x': x - left, 'y': y - top, 'size': size};
+    console.log(loc);
+    return loc;
 }
 
 core.prototype.playSound = function (soundName, soundType) {
