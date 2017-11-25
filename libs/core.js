@@ -2362,13 +2362,10 @@ core.prototype.upload = function (delay) {
         parameters+="&yellow="+core.status.hero.items.keys.yellowKey+"&blue="+core.status.hero.items.keys.blueKey;
         parameters+="&playtime="+core.status.hero.time.playtime+"&totaltime="+core.status.hero.time.totaltime+"&step="+core.status.hero.steps+"&ending="+(core.status.event.id=='win'?1:0);
 
-        // console.log(parameters);
-        // console.log("upload!");
-        xmlHttp.open("GET", "http://ckcz123.com/service/mota/mota4.php?"+parameters, true);
+        xmlHttp.open("GET", "/service/mota/mota4.php?"+parameters, true);
         xmlHttp.send();
     }
     catch (e) {
-        // console.log(e);
     }
 
 }
