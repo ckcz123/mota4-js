@@ -48,7 +48,7 @@ function core() {
         'toolBar': {},
         'items': {},
         'scale': 1.0,
-        'screenMode': 'adaptive',
+        'screenMode': 'bigScreen',
     }
     this.initStatus = {
         'played': false,
@@ -3089,24 +3089,25 @@ core.prototype.getClickLoc = function (x, y) {
 
     var statusBar = {'x': 0, 'y': 0};
     var size = 32;
-    switch (core.position.screenMode) {
-        case 'adaptive':
-            size = size * core.position.scale;
-            statusBar.x = 0;
-            // 这里的3是指statusBar和游戏画布之间的白线宽度
-            statusBar.y = core.position.statusBar.height + 3;
-            break;
+    size = size * core.position.scale;
+    
+    switch (core.position.screenMode) {// 这里的3是指statusBar和游戏画布之间的白线宽度
         case 'vertical':
             statusBar.x = 0;
             statusBar.y = core.position.statusBar.height + 3;
             break;
         case 'horizontal':
             statusBar.x = core.position.statusBar.width + 3;
+            console.log(core.position.statusBar.width)
+            statusBar.y = 0;
+            break;
+        case 'bigScreen':
+            statusBar.x = core.position.statusBar.width + 3;
             statusBar.y = 0;
             break;
     }
-    var left = core.position.gameGroup.left + statusBar.x;
-    var top = core.position.gameGroup.top + statusBar.y;
+    var left = core.dom.gameGroup.offsetLeft + statusBar.x;
+    var top = core.dom.gameGroup.offsetTop + statusBar.y;
     var loc={'x': x - left, 'y': y - top, 'size': size};
     return loc;
 }
@@ -3195,123 +3196,189 @@ core.prototype.hide = function (obj, speed, callback) {
     }, speed);
 }
 
-core.prototype.resize = function(width, height) {
+core.prototype.resize = function(clientWidth, clientHeight) {
 
     // 画布大小
     var canvasWidth = 416;
     // 竖屏状态下，默认StatusBar高度（不计算边框）
-    var statusBarHeight = 84;
-    // 横屏状态下，默认StatusBar宽度（不计算边框）
-    var statusBarWidth = 132;
+    var statusBarHeight = 80;
     // 竖屏状态下，底端默认ToolBar高度（不计算边框）
     var toolBarHeight = 49;
 
-    // 宽度不够，竖直适配
-    if (width < 3 + statusBarWidth + 3 + 416 + 3) {
+    // 横屏状态下，默认StatusBar宽度（不计算边框）
+    var statusBarWidth = 129;
+	
+    //适配宽度阈值， 6为两倍的边框宽度
+    var ADAPT_WIDTH = canvasWidth + 6;
 
-        var scale = 1;
-
-        // 自适应
-        if (width < 3 + canvasWidth + 3) {
-            core.position.screenMode = 'adaptive';
-
-            // 放缩比
-            scale = width/422;
-
-            // 3px border
-            core.position.gameGroup = {
-                'top': 3, 'left': 3,
-            };
-        }
-        else {
-            core.position.screenMode = 'vertical';
-            scale = 1.0;
-            // 3px border
-            core.position.gameGroup = {
-                'top': 3, 'left': (width-canvasWidth)/2,
-            };
-        }
-
-        core.position.scale = scale;
-        canvasWidth *= scale;
-        statusBarHeight *= scale;
-        toolBarHeight *= scale;
-
-        core.position.gameGroup.width = canvasWidth;
-
-        // 这几项都是相对gameGroup的位置
-        core.position.statusBar = {
-            'width': canvasWidth, 'height': statusBarHeight,
-            'fontSize': 16 * scale
-        }
-        core.position.canvas = {
-            'borderTop': '3px #fff solid', 'borderLeft': '',
-            'top': statusBarHeight, // 3px计算在内边框
-            'left': 0, 'width': canvasWidth, 'height': canvasWidth
-        }
-        core.position.toolBar = {
-            'display': 'block',
-            'top': statusBarHeight + 3 + canvasWidth,
-            'width': canvasWidth, 'height': toolBarHeight
-        }
-
-        core.position.gameGroup.height = statusBarHeight + 3 + canvasWidth + 3 + toolBarHeight;
-
-        var icon_firstline = 8 * scale, icon_secondline = 44 * scale;
-        var icon_toolline = core.position.toolBar.top + 13 * scale;
-        var icon_toolline_per = 46 * scale;
-
-        var text_firstline = 16 * scale, text_secondline = 52 * scale;
-        var text_toolline = core.position.toolBar.top + 18 * scale;
-
-        core.position.items = {
-            'image': {
-                'size': 32*scale,
-                'floor': {'top': icon_firstline, 'left': 8 * scale},
-                'hp': {'top': icon_firstline, 'left': 90 * scale},
-                'atk': {'top': icon_firstline, 'left': 210 * scale},
-                'def': {'top': icon_firstline, 'left': 316 * scale},
-                'mdef': {'top': icon_secondline, 'left': 8 * scale},
-                'money': {'top': icon_secondline, 'left': 138 * scale},
-                'book': {'top': icon_toolline, 'left': 8 * scale},
-                'fly': {'top': icon_toolline, 'left': 8 * scale + icon_toolline_per},
-                'toolbox': {'top': icon_toolline, 'left': 8 * scale + icon_toolline_per * 2},
-                'save': {'top': icon_toolline, 'left': 8 * scale + icon_toolline_per * 3},
-                'load': {'top': icon_toolline, 'left': 8 * scale + icon_toolline_per * 4},
-                'settings': {'top': icon_toolline, 'left': 8 * scale + icon_toolline_per * 5}
-            },
-            'floor': {'top': text_firstline, 'left': 48 * scale},
-            'hp': {'top': text_firstline, 'left': 130 * scale},
-            'atk': {'top': text_firstline, 'left': 246 * scale},
-            'def': {'top': text_firstline, 'left': 352 * scale},
-            'mdef': {'top': text_secondline, 'left': 48 * scale},
-            'money': {'top': text_secondline, 'left': 178 * scale},
-            'yellowKey': {'top': text_secondline, 'left': 268 * scale},
-            'blueKey': {'top': text_secondline, 'left': 308 * scale},
-            'redKey': {'top': text_secondline, 'left': 348 * scale},
-            'hard': {'top': text_toolline, 'left': 300*scale}
-        }
+    var width = clientWidth;
+    var isHorizontal = false;
+    if(clientWidth > clientHeight && clientHeight < 422){
+        isHorizontal = true;
+        width = clientHeight;
     }
 
-    // 宽度够了，横向适配
-    else {
+    // 移动端
+    if (width < ADAPT_WIDTH) {
+        var zoom = (ADAPT_WIDTH - width) / 4.22;
+        var scale = 1 - zoom / 100;
+
+        core.position.scale = scale;
+        canvasWidth = width - 6;
+
+        if(!isHorizontal){ //竖屏
+            core.position.screenMode = 'vertical';
+            
+            statusBarHeight *= scale;
+            toolBarHeight *= scale;
+    
+            core.position.gameGroup = {
+                'width': canvasWidth,
+                'height': width+statusBarHeight+toolBarHeight,
+                'top': (clientHeight-width-statusBarHeight-toolBarHeight)/2, 
+                'left': 3
+            }
+    
+            // 这几项都是相对gameGroup的位置
+            core.position.statusBar = {
+                'width': canvasWidth, 
+                'height': statusBarHeight,
+                'top': 0,
+                'left': 0,
+                'fontSize': 16 * scale
+            }
+            core.position.canvas = {
+                'width': canvasWidth,
+                'height': canvasWidth,
+                'top': statusBarHeight, // 3px计算在内边框
+                'left': 0,
+                'borderLeft': '',
+                'borderTop': '3px #fff solid', 
+                'borderBottom': '3px #fff solid'
+            }
+            core.position.toolBar = {
+                'display': 'block', 
+                'width': canvasWidth, 'height': toolBarHeight,
+                'top': statusBarHeight + 3 + canvasWidth,
+            }
+    
+            var icon_firstline = 8 * scale, icon_secondline = 44 * scale;
+            var icon_toolline = core.position.toolBar.top + 13 * scale;
+            var icon_toolline_per = 46 * scale;
+    
+            var text_firstline = 16 * scale, text_secondline = 52 * scale;
+            var text_toolline = core.position.toolBar.top + 18 * scale;
+    
+            core.position.items = {
+                'image': {
+                    'size': 32*scale,
+                    'floor': {'top': icon_firstline, 'left': 8 * scale},
+                    'hp': {'top': icon_firstline, 'left': 90 * scale},
+                    'atk': {'top': icon_firstline, 'left': 210 * scale},
+                    'def': {'top': icon_firstline, 'left': 316 * scale},
+                    'mdef': {'top': icon_secondline, 'left': 8 * scale},
+                    'money': {'top': icon_secondline, 'left': 138 * scale},
+                    'book': {'top': icon_toolline, 'left': 8 * scale},
+                    'fly': {'top': icon_toolline, 'left': 8 * scale + icon_toolline_per},
+                    'toolbox': {'top': icon_toolline, 'left': 8 * scale + icon_toolline_per * 2},
+                    'save': {'top': icon_toolline, 'left': 8 * scale + icon_toolline_per * 3},
+                    'load': {'top': icon_toolline, 'left': 8 * scale + icon_toolline_per * 4},
+                    'settings': {'top': icon_toolline, 'left': 8 * scale + icon_toolline_per * 5}
+                },
+                'floor': {'top': text_firstline, 'left': 48 * scale},
+                'hp': {'top': text_firstline, 'left': 130 * scale},
+                'atk': {'top': text_firstline, 'left': 246 * scale},
+                'def': {'top': text_firstline, 'left': 352 * scale},
+                'mdef': {'top': text_secondline, 'left': 48 * scale},
+                'money': {'top': text_secondline, 'left': 178 * scale},
+                'yellowKey': {'top': text_secondline, 'left': 268 * scale},
+                'blueKey': {'top': text_secondline, 'left': 308 * scale},
+                'redKey': {'top': text_secondline, 'left': 348 * scale},
+                'hard': {'top': text_toolline, 'left': 300*scale}
+            }
+        }else { //横屏
+            core.position.screenMode = 'horizontal';
+            statusBarWidth *= scale
+
+            core.position.gameGroup = {
+                'width': statusBarWidth + canvasWidth + 3, 
+                'height': canvasWidth,
+                'top': 3, 
+                'left': (clientWidth - width - statusBarWidth)/2,
+            }
+    
+            // 这几项都是相对gameGroup的位置
+            core.position.statusBar = {
+                'top': 0, 'left': 0,
+                'width': statusBarWidth,
+                'height': canvasWidth,
+                'fontSize': 16 * scale
+            }
+            core.position.canvas = {
+                'borderTop': '', 
+                'borderLeft': '3px #fff solid',
+                'borderBottom': '',
+                'top': 0, 
+                'left': statusBarWidth, 
+                'width': canvasWidth, 
+                'height': canvasWidth
+            }
+            core.position.toolBar = {
+                'display': 'none', 'top': 0, 'left': 0, 'width': 0, 'height': 0
+            }
+    
+            var first_col = 8 * scale, second_col = 50 * scale, third_col = 92 * scale;
+            var first_icon_row = 20 * scale, first_text_row = 28 * scale, first_tool_row = 303 * scale, per_row = 40 * scale;
+    
+            core.position.items = {
+                'image': {
+                    'size': 32*scale,
+                    'floor': {'top': first_icon_row, 'left': first_col},
+                    'hp': {'top': first_icon_row + per_row, 'left': first_col},
+                    'atk': {'top': first_icon_row + per_row * 2, 'left': first_col},
+                    'def': {'top': first_icon_row + per_row * 3, 'left': first_col},
+                    'mdef': {'top': first_icon_row + per_row * 4, 'left': first_col},
+                    'money': {'top': first_icon_row + per_row * 5, 'left': first_col},
+                    'book': {'top': first_tool_row, 'left': first_col},
+                    'fly': {'top': first_tool_row, 'left': second_col},
+                    'toolbox': {'top': first_tool_row, 'left': third_col},
+                    'save': {'top': first_tool_row + per_row, 'left': first_col},
+                    'load': {'top': first_tool_row + per_row, 'left': second_col},
+                    'settings': {'top': first_tool_row + per_row, 'left': third_col}
+                },
+                'floor': {'top': first_text_row, 'left': second_col},
+                'hp': {'top': first_text_row + per_row, 'left': second_col},
+                'atk': {'top': first_text_row + per_row * 2, 'left': second_col},
+                'def': {'top': first_text_row + per_row * 3, 'left': second_col},
+                'mdef': {'top': first_text_row + per_row * 4, 'left': second_col},
+                'money': {'top': first_text_row + per_row * 5, 'left': second_col},
+                'yellowKey': {'top': first_text_row + per_row * 6, 'left': first_col},
+                'blueKey':{'top': first_text_row + per_row * 6, 'left': second_col},
+                'redKey': {'top': first_text_row + per_row * 6, 'left': third_col},
+                'hard': {'top': 383*scale, 'left': 22*scale}
+            }
+        }
+        
+    }else { //大屏设备 pc端
         core.position.scale = 1;
-        core.position.screenMode = 'horizontal';
+        core.position.screenMode = 'bigScreen';
 
         var totalWidth = statusBarWidth + 3 + canvasWidth;
 
         core.position.gameGroup = {
-            'top': (height-canvasWidth)/2, 'left': (width-totalWidth)/2,
+            'top': (clientHeight-canvasWidth)/2,
+            'left': (width-totalWidth)/2,
             'width': totalWidth, 'height': canvasWidth
         }
 
         // 这几项都是相对gameGroup的位置
         core.position.statusBar = {
+            'top': 0, 'left': 0,
             'width': statusBarWidth, 'height': canvasWidth,
             'fontSize': 16
         }
         core.position.canvas = {
-            'borderTop': '', 'borderLeft': '3px #fff solid',
+            'borderTop': '', 'borderBottom': '', 'borderLeft': '3px #fff solid',
             'top': 0, 'left': statusBarWidth, 'width': canvasWidth, 'height': canvasWidth
         }
         core.position.toolBar = {
@@ -3352,7 +3419,6 @@ core.prototype.resize = function(width, height) {
 
     core.resetSize();
 }
-
 core.prototype.resetSize = function () {
 
     core.dom.gameGroup.style.left = core.position.gameGroup.left + "px";
