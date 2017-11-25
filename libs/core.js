@@ -2253,7 +2253,7 @@ core.prototype.drawAbout = function() {
     var len = core.canvas.ui.measureText('特别鸣谢： ').width;
     core.fillText('ui', 'iEcho', text_start+len, top+240);
     core.fillText('ui', '打Dota的喵', text_start+len, top+272);
-    core.fillText('ui', 'HTML5魔塔交流群：123456789', text_start, top+304);
+    core.fillText('ui', 'HTML5魔塔交流群：539113091', text_start, top+304);
 
     core.fillText('ui', '<点击任意位置继续>', 230, 368, '#CCCCCC', '13px Verdana');
 }
