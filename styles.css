@@ -143,6 +143,15 @@ html, body {
     z-index: 6;
 }
 
+#toolBar {
+    position: absolute;
+    background: url(images/ground.png) round;
+    z-index: 5;
+    display: none;
+    left: 0px;
+    border-top: 3px #fff solid;
+}
+
 #statusBar img {
     position: absolute;
     display: none;
@@ -150,6 +159,14 @@ html, body {
 
 #statusBar p {
     position: absolute;
+    color: white;
+    font: normal 1.1em number;
+    margin: 0;
+}
+
+#statusBar p#hard {
+    color: red;
+    font-weight: bold;
 }
 
 .gameCanvas {
@@ -178,70 +195,4 @@ html, body {
 
 #data {
     z-index: 6;
-}
-
-#moveBtnGroup {
-    width: 124px;
-    height: 124px;
-    position: fixed;
-    bottom: 20px;
-    display: none;
-    z-index: 13;
-}
-
-.moveBtn {
-    width: 30%;
-    height: 30%;
-    position: absolute;
-}
-
-#upBtn {
-    top: 0px;
-    left: 35%;
-    right: 35%;
-}
-
-#leftBtn {
-    top: 35%;
-    left: 0px;
-    bottom: 35%;
-    transform: rotate(-90deg);
-    -ms-transform: rotate(-90deg); /* IE 9 */
-    -moz-transform: rotate(-90deg); /* Firefox */
-    -webkit-transform: rotate(-90deg); /* Safari 和 Chrome */
-    -o-transform: rotate(-90deg); /* Opera */
-}
-
-#downBtn {
-    left: 35%;
-    bottom: 0px;
-    right: 35%;
-    transform: rotate(180deg);
-    -ms-transform: rotate(180deg); /* IE 9 */
-    -moz-transform: rotate(180deg); /* Firefox */
-    -webkit-transform: rotate(180deg); /* Safari 和 Chrome */
-    -o-transform: rotate(180deg); /* Opera */
-}
-
-#rightBtn {
-    top: 35%;
-    right: 0px;
-    bottom: 35%;
-    transform: rotate(90deg);
-    -ms-transform: rotate(90deg); /* IE 9 */
-    -moz-transform: rotate(90deg); /* Firefox */
-    -webkit-transform: rotate(90deg); /* Safari 和 Chrome */
-    -o-transform: rotate(90deg); /* Opera */
-}
-
-.statusLabel {
-    text-align: right;
-    color: white;
-    font: normal 1.1em number;
-    margin: 0;
-}
-
-#hard {
-    color: red;
-    font-weight: bold;
 }

@@ -449,6 +449,9 @@ core.prototype.keyUp = function(e) {
 core.prototype.onclick = function (x, y) {
     // console.log("Click: (" + x + "," + y + ")");
 
+    // 非游戏屏幕内
+    if (x<0 || y<0 || x>12 || y>12) return;
+
     // 寻路
     if (!core.status.lockControl) {
         core.setAutomaticRoute(x, y);
@@ -2993,15 +2996,15 @@ core.prototype.getClickLoc = function (x, y) {
         case 'adaptive':
             var zoom = (422 - main.dom.body.clientWidth) / 4.22;
             statusBar.x = 0;
-            statusBar.y = 132 - zoom;
+            statusBar.y = core.dom.statusBar.offsetHeight + 3 - zoom;
             size = size - size * zoom / 100;
             break;
         case 'vertical':
             statusBar.x = 0;
-            statusBar.y = 132;
+            statusBar.y = core.dom.statusBar.offsetHeight + 3;
             break;
         case 'horizontal':
-            statusBar.x = 132;
+            statusBar.x = core.dom.statusBar.offsetWidth + 3;
             statusBar.y = 0;
             break;
     }
@@ -3106,13 +3109,12 @@ core.prototype.resize = function (width, height) {
     if (width < 422) {
         var zoom = (422 - width) / 4.22;
         var scale = 1 - zoom / 100;
-        var top = (129 - zoom);
+        var top = (84 - zoom);
         // var helfmoveBtnGroupWidth = (109 - zoom) / 2;
         core.dom.gameGroup.style.top = '3px';
         core.dom.gameGroup.style.left = '3px';
         core.dom.gameGroup.style.width = (width - 6) + 'px';
-        core.dom.gameGroup.style.height = (top + width - 3) + 'px';
-        core.dom.startTopLoadTips.style.fontSize = '0.6rem';
+        core.dom.gameGroup.style.height = 555 * scale + 'px';
         //core.dom.startBackground.style.height = (top + width) + 'px';
         //core.dom.startButtonGroup.style.bottom = '15px';
         //core.dom.startButtonGroup.style.fontSize = '1rem';
@@ -3120,6 +3122,10 @@ core.prototype.resize = function (width, height) {
         core.dom.statusBar.style.width = (width - 6) + 'px';
         core.dom.statusBar.style.height = top + 'px';
         core.dom.statusBar.style.fontSize = 16 * scale + 'px';
+        core.dom.toolBar.style.display = 'block';
+        core.dom.toolBar.style.top = 506 * scale + 'px';
+        core.dom.toolBar.style.width = (width - 6) + 'px';
+        core.dom.toolBar.style.height = 46 * scale + 'px';
         for (var i = 0; i < core.dom.gameCanvas.length; i++) {
             core.dom.gameCanvas[i].style.borderTop = '3px #fff solid';
             core.dom.gameCanvas[i].style.borderLeft = '';
@@ -3185,36 +3191,36 @@ core.prototype.resize = function (width, height) {
         // book
         core.statusBar.image.book.style.width = 32 * scale + "px";
         core.statusBar.image.book.style.height = 32 * scale + "px";
-        core.statusBar.image.book.style.top = 86 * scale + "px";
+        core.statusBar.image.book.style.top = 516 * scale + "px";
         core.statusBar.image.book.style.left = 8 * scale + "px";
         // fly
         core.statusBar.image.fly.style.width = 32 * scale + "px";
         core.statusBar.image.fly.style.height = 32 * scale + "px";
-        core.statusBar.image.fly.style.top = 86 * scale + "px";
+        core.statusBar.image.fly.style.top = 516 * scale + "px";
         core.statusBar.image.fly.style.left = 54 * scale + "px";
         // toolbox
         core.statusBar.image.toolbox.style.width = 32 * scale + "px";
         core.statusBar.image.toolbox.style.height = 32 * scale + "px";
-        core.statusBar.image.toolbox.style.top = 86 * scale + "px";
+        core.statusBar.image.toolbox.style.top = 516 * scale + "px";
         core.statusBar.image.toolbox.style.left = 100 * scale + "px";
         // save
         core.statusBar.image.save.style.width = 32 * scale + "px";
         core.statusBar.image.save.style.height = 32 * scale + "px";
-        core.statusBar.image.save.style.top = 86 * scale + "px";
+        core.statusBar.image.save.style.top = 516 * scale + "px";
         core.statusBar.image.save.style.left = 146 * scale + "px";
         // load
         core.statusBar.image.load.style.width = 32 * scale + "px";
         core.statusBar.image.load.style.height = 32 * scale + "px";
-        core.statusBar.image.load.style.top = 86 * scale + "px";
+        core.statusBar.image.load.style.top = 516 * scale + "px";
         core.statusBar.image.load.style.left = 192 * scale + "px";
         // setting
         core.statusBar.image.settings.style.width = 32 * scale + "px";
         core.statusBar.image.settings.style.height = 32 * scale + "px";
-        core.statusBar.image.settings.style.top = 86 * scale + "px";
+        core.statusBar.image.settings.style.top = 516 * scale + "px";
         core.statusBar.image.settings.style.left = 238 * scale + "px";
         // hard
-        core.statusBar.hard.style.top = 90 * scale + "px";
-        core.statusBar.hard.style.left = 292 * scale + "px";
+        core.statusBar.hard.style.top = 522 * scale + "px";
+        core.statusBar.hard.style.left = 300 * scale + "px";
 
         core.status.screenMode = 'adaptive';
         console.log('已调整为自适应屏');
@@ -3223,19 +3229,23 @@ core.prototype.resize = function (width, height) {
         core.dom.gameGroup.style.left = (halfWidth - 208) + 'px';
         core.dom.gameGroup.style.top = '3px';
         core.dom.gameGroup.style.width = '416px';
-        core.dom.gameGroup.style.height = '548px';
-        core.dom.startTopLoadTips.style.fontSize = '0.6rem';
+        core.dom.gameGroup.style.height = '555px';
         //core.dom.startBackground.style.height = '548px';
         //core.dom.startButtonGroup.style.bottom = '20px';
         //core.dom.startButtonGroup.style.fontSize = '1.2rem';
         core.dom.floorMsgGroup.style.width = '416px';
         core.dom.statusBar.style.width = '416px';
-        core.dom.statusBar.style.height = '129px';
+        core.dom.statusBar.style.height = '84px';
         core.dom.statusBar.style.fontSize = '16px';
+        core.dom.toolBar.style.display = 'block';
+        core.dom.toolBar.style.top = '506px';
+        core.dom.toolBar.style.width = '416px';
+        core.dom.toolBar.style.height = '46px';
+
         for (var i = 0; i < core.dom.gameCanvas.length; i++) {
             core.dom.gameCanvas[i].style.borderTop = '3px #fff solid';
             core.dom.gameCanvas[i].style.borderLeft = '';
-            core.dom.gameCanvas[i].style.top = '129px';
+            core.dom.gameCanvas[i].style.top = '84px';
             core.dom.gameCanvas[i].style.left = '0px';
             core.dom.gameCanvas[i].style.right = '0px';
             core.dom.gameCanvas[i].style.width = '416px';
@@ -3297,36 +3307,36 @@ core.prototype.resize = function (width, height) {
         // book
         core.statusBar.image.book.style.width = "32px";
         core.statusBar.image.book.style.height = "32px";
-        core.statusBar.image.book.style.top = "86px";
+        core.statusBar.image.book.style.top = "514px";
         core.statusBar.image.book.style.left = "8px";
         // fly
         core.statusBar.image.fly.style.width = "32px";
         core.statusBar.image.fly.style.height = "32px";
-        core.statusBar.image.fly.style.top = "86px";
+        core.statusBar.image.fly.style.top = "514px";
         core.statusBar.image.fly.style.left = "54px";
         // toolbox
         core.statusBar.image.toolbox.style.width = "32px";
         core.statusBar.image.toolbox.style.height = "32px";
-        core.statusBar.image.toolbox.style.top = "86px";
+        core.statusBar.image.toolbox.style.top = "516px";
         core.statusBar.image.toolbox.style.left = "100px";
         // save
         core.statusBar.image.save.style.width = "32px";
         core.statusBar.image.save.style.height = "32px";
-        core.statusBar.image.save.style.top = "86px";
+        core.statusBar.image.save.style.top = "516px";
         core.statusBar.image.save.style.left = "146px";
         // load
         core.statusBar.image.load.style.width = "32px";
         core.statusBar.image.load.style.height = "32px";
-        core.statusBar.image.load.style.top = "86px";
+        core.statusBar.image.load.style.top = "516px";
         core.statusBar.image.load.style.left = "192px";
         // setting
         core.statusBar.image.settings.style.width = "32px";
         core.statusBar.image.settings.style.height = "32px";
-        core.statusBar.image.settings.style.top = "86px";
+        core.statusBar.image.settings.style.top = "516px";
         core.statusBar.image.settings.style.left = "238px";
         // hard
-        core.statusBar.hard.style.top = "90px";
-        core.statusBar.hard.style.left = "292px";
+        core.statusBar.hard.style.top = "522px";
+        core.statusBar.hard.style.left = "300px";
 
         core.status.screenMode = 'vertical';
         console.log('已调整为竖屏');
@@ -3336,7 +3346,6 @@ core.prototype.resize = function (width, height) {
         core.dom.gameGroup.style.top = (height / 2 - 208) + 'px';
         core.dom.gameGroup.style.width = '548px';
         core.dom.gameGroup.style.height = '416px';
-        core.dom.startTopLoadTips.style.fontSize = '0.6rem';
         //core.dom.startBackground.style.height = '416px';
         //core.dom.startButtonGroup.style.bottom = '20px';
         //core.dom.startButtonGroup.style.fontSize = '1.4rem';
@@ -3344,6 +3353,7 @@ core.prototype.resize = function (width, height) {
         core.dom.statusBar.style.width = '129px';
         core.dom.statusBar.style.height = '416px';
         core.dom.statusBar.style.fontSize = '16px';
+        core.dom.toolBar.style.display = 'none';
         for (var i = 0; i < core.dom.gameCanvas.length; i++) {
             core.dom.gameCanvas[i].style.borderTop = '';
             core.dom.gameCanvas[i].style.borderLeft = '3px #fff solid';
@@ -3384,7 +3394,6 @@ core.prototype.resize = function (width, height) {
         core.statusBar.image.def.style.left = "8px";
         core.statusBar.def.style.top = "148px";
         core.statusBar.def.style.left = "50px";
-        core.statusBar.def.innerHTML = "10";
         // mdef
         core.statusBar.image.mdef.style.width = "32px";
         core.statusBar.image.mdef.style.height = "32px";

@@ -15,6 +15,7 @@ function main() {
         'versionLabel': document.getElementById('versionLabel'),
         'floorNameLabel': document.getElementById('floorNameLabel'),
         'statusBar': document.getElementById('statusBar'),
+        'toolBar': document.getElementById('toolBar'),
         'gameCanvas': document.getElementsByClassName('gameCanvas'),
         'playGame': document.getElementById('playGame'),
         'loadGame': document.getElementById('loadGame'),
