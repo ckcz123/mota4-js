@@ -95,6 +95,13 @@ function main() {
             },
             'flyRange': ['MT0'],
             'loc': {'direction': 'down', 'x': 6, 'y': 12},
+            'steps': 0,
+            'time': {
+                'starttime': new Date(),
+                'playtime': 0,
+                'totaltime': 0,
+                'lasttime': new Date()
+            }
         },
         'hard': 10,
         'shops': {

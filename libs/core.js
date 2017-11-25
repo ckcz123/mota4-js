@@ -193,7 +193,7 @@ core.prototype.loader = function (callback) {
                 imgName = imgName[0];
                 core.material.images[imgName] = image;
                 loadedImageNum++;
-                // core.setStartLoadTipText(imgName + ' 加载完毕...');
+                core.setStartLoadTipText(imgName + ' 加载完毕...');
                 core.setStartProgressVal(loadedImageNum * (100 / allImageNum));
                 if (loadedImageNum == allImageNum) {
                     /*
@@ -276,24 +276,12 @@ core.prototype.loadImage = function (imgName, callback) {
 core.prototype.loadSound = function() {
     if (!core.isset(core.material.sounds.mp3)) return;
     if (core.musicStatus.isIOS) return;
-    if (core.musicStatus.loaded) {
-        /*
-        if (core.musicStatus.bgmStatus>=0) {
-            return;
-        }
-        core.musicStatus.bgmStatus=1;
-        if (core.musicStatus.soundStatus)
-            core.playBgm('bgm', 'mp3');
-            */
-
-        return;
-    }
+    if (core.musicStatus.loaded) return;
     core.musicStatus.loaded=true;
-    console.log("Load Sound!");
+    console.log("加载音乐");
 
     var toLoadList = [];
 
-    // 全部设为静音
     for (var key in core.material.sounds) {
         for (var name in core.material.sounds[key]) {
             toLoadList.push(core.material.sounds[key][name]);
@@ -509,9 +497,7 @@ core.prototype.onclick = function (x, y) {
                 core.openSettings(false);
             }
             if (y == 4) core.selectShop();
-            if (y == 5) core.save(false);
-            if (y == 6) core.load(false);
-            if (y == 7) {
+            if (y == 5) {
                 if (core.status.hard == 0) {
                     core.drawTip("当前已是难度0，不能再降低难度了");
                     return;
@@ -527,7 +513,16 @@ core.prototype.onclick = function (x, y) {
                     core.openSettings(false);
                 });
             }
-            if (y == 8) {
+            if (y == 6) {
+                core.showConfirmBox('你确定要清空所有存档吗？', function(){
+                    core.closePanel();
+                    localStorage.clear();
+                    core.drawTip("操作成功");
+                }, function() {
+                    core.openSettings(false);
+                });
+            }
+            if (y == 7) {
                 core.showConfirmBox("你确定要重新开始吗？", function () {
                     // core.drawTip("重新开始游戏");
                     core.closePanel();
@@ -535,6 +530,9 @@ core.prototype.onclick = function (x, y) {
                 }, function () {
                     core.openSettings(false);
                 });
+            }
+            if (y==8) {
+                core.drawAbout();
             }
             if (y == 9) core.closePanel();
             return;
@@ -695,6 +693,19 @@ core.prototype.onclick = function (x, y) {
         return;
     }
 
+    // 关于
+    if (core.status.event.id == 'about') {
+        core.closePanel(false);
+        return;
+    }
+
+    // 获胜
+    if (core.status.event.id == 'win') {
+        core.closePanel(false);
+        // core.restart();
+        return;
+    }
+
     // NPC
     if (core.status.event.id == 'npc') {
 
@@ -708,7 +719,6 @@ core.prototype.onclick = function (x, y) {
             }
 
         }
-
     }
 
 }
@@ -982,6 +992,7 @@ core.prototype.setHeroMoveInterval = function (direction, x, y, callback) {
                 }
                 if (moveStep == -32) {
                     core.setHeroLoc('y', '--');
+                    core.moveOneStep();
                     if (core.status.heroStop) {
                         core.drawHero(direction, x, y - 1, 'stop');
                     }
@@ -1000,6 +1011,7 @@ core.prototype.setHeroMoveInterval = function (direction, x, y, callback) {
                 }
                 if (moveStep == -32) {
                     core.setHeroLoc('x', '--');
+                    core.moveOneStep();
                     if (core.status.heroStop) {
                         core.drawHero(direction, x - 1, y, 'stop');
                     }
@@ -1018,6 +1030,7 @@ core.prototype.setHeroMoveInterval = function (direction, x, y, callback) {
                 }
                 if (moveStep == 32) {
                     core.setHeroLoc('y', '++');
+                    core.moveOneStep();
                     if (core.status.heroStop) {
                         core.drawHero(direction, x, y + 1, 'stop');
                     }
@@ -1036,6 +1049,7 @@ core.prototype.setHeroMoveInterval = function (direction, x, y, callback) {
                 }
                 if (moveStep == 32) {
                     core.setHeroLoc('x', '++');
+                    core.moveOneStep();
                     if (core.status.heroStop) {
                         core.drawHero(direction, x + 1, y, 'stop');
                     }
@@ -1106,6 +1120,10 @@ core.prototype.moveHero = function (direction) {
     var heroIcon = core.material.icons.heros[core.status.hero.id][direction];
     core.setHeroLoc('direction', direction);
     core.status.heroStop = false;
+}
+
+core.prototype.moveOneStep = function() {
+    core.status.hero.steps++;
 }
 
 core.prototype.stopHero = function () {
@@ -1225,13 +1243,8 @@ core.prototype.battle = function (id, x, y) {
         core.openDoor('specialDoor', 6, 8, false);
     }
     if (id=='blackKing' && core.status.floorId=='MT20') {
-        core.upload();
         core.win();
     }
-
-
-
-
 
 }
 
@@ -2164,9 +2177,7 @@ core.prototype.npcAction = function() {
 
 core.prototype.drawTextBox = function(content, npcId) {
     var background = core.canvas.ui.createPattern(core.material.ground, "repeat");
-
     var contents = content.split('\n');
-
     var isHero = npcId=='hero';
 
     core.clearMap('ui', 0, 0, 416, 416);
@@ -2182,7 +2193,7 @@ core.prototype.drawTextBox = function(content, npcId) {
     // 名称
     core.canvas.ui.textAlign = "left";
 
-    var content_left = left + 25, content_top = top+45;
+    var content_left = left + 25, content_top = top + 35;
     if (core.isset(npcId)) {
         content_left = left+63;
         content_top = top+57;
@@ -2215,21 +2226,36 @@ core.prototype.drawTextBox = function(content, npcId) {
     }
 
     core.fillText('ui', '<点击任意位置继续>', 270, 393, '#CCCCCC', '13px Verdana');
+}
 
-    /*
-    // 对话
+core.prototype.drawAbout = function() {
+
+    core.status.event.id = 'about';
+
+    core.clearMap('ui', 0, 0, 416, 416);
+    var left = 48, top = 36, right = 416 - 2 * left, bottom = 416 - 2 * top;
+
+    core.setAlpha('ui', 0.85);
+    core.fillRect('ui', left, top, right, bottom, '#000000');
+    core.setAlpha('ui', 1);
+    core.strokeRect('ui', left - 1, top - 1, right + 1, bottom + 1, '#FFFFFF', 2);
+
+    var text_start = left + 24;
+    // 名称
     core.canvas.ui.textAlign = "left";
-    core.fillText('ui', "勇敢的武士啊，给我" + need, left + 60, top + 65, '#FFFFFF', 'bold 14px Verdana');
-    core.fillText('ui', "金币你就可以：", left + 60, top + 83);
+    core.fillText('ui', "20层的试炼", text_start, top+35, "#FFD700", "bold 22px Verdana");
+    core.fillText('ui', "HTML5复刻版", text_start+130, top+37, "#DDDDDD", "bold 15px Verdana");
+    core.fillText('ui', "作者： 艾之葵", text_start, top + 80, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "版本： "+core.firstData.version, text_start, top + 112, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "制作工具： WebStorm", text_start, top + 144, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "测试平台： Chrome/微信/iOS", text_start, top + 176, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', '特别鸣谢： Vinlic科技', text_start, top+208);
+    var len = core.canvas.ui.measureText('特别鸣谢： ').width;
+    core.fillText('ui', 'iEcho', text_start+len, top+240);
+    core.fillText('ui', '打Dota的喵', text_start+len, top+272);
+    core.fillText('ui', 'HTML5魔塔交流群：123456789', text_start, top+304);
 
-    // 选项
-    core.canvas.ui.textAlign = "center";
-    for (var i = 0; i < shop.choices.length; i++) {
-        var choice = shop.choices[i];
-        core.fillText('ui', choice.text, 208, top + 120 + 32 * i, "#FFFFFF", "bold 17px Verdana");
-    }
-    core.fillText('ui', "退出商店", 208, top + 248);
-    */
+    core.fillText('ui', '<点击任意位置继续>', 230, 368, '#CCCCCC', '13px Verdana');
 }
 
 /**
@@ -2291,10 +2317,59 @@ core.prototype.setTwoDigits = function (x) {
 }
 
 core.prototype.win = function() {
-    core.drawTip("你赢了！");
+
+    // 正在移动中...
+    if (!core.status.heroStop) {
+        setTimeout(function () {
+            core.win();
+        }, 30);
+        return;
+    }
+
+    core.status.event.id = 'win';
+    core.lockControl();
+    core.drawTextBox('恭喜通关难度'+core.status.hard+'！你的分数是：'+core.status.hero.hp+"\n欢迎截图到发布帖下进行炫耀！\n\n再次感谢对本塔的支持！");
+
+    core.upload();
 }
 
-core.prototype.upload = function () {
+core.prototype.updateTime = function() {
+
+    var currentTime = new Date();
+    core.status.hero.time.playtime += (currentTime.getTime()-core.status.hero.time.lasttime.getTime())/1000;
+    core.status.hero.time.totaltime += (currentTime.getTime()-core.status.hero.time.lasttime.getTime())/1000;
+    core.status.hero.time.lasttime = currentTime;
+
+}
+
+
+core.prototype.upload = function (delay) {
+    try {
+
+        if (core.isset(delay) && delay>0) {
+            setTimeout(function() {core.upload();}, delay);
+            return;
+        }
+
+        core.updateTime();
+
+        var xmlHttp = new XMLHttpRequest();
+        var parameters = "action=upload";
+        parameters+="&starttime="+core.status.hero.time.starttime.getTime()/1000;
+        parameters+="&hard="+core.status.hard;
+        parameters+="&floor="+core.status.maps[core.status.floorId].name;
+        parameters+="&hp="+core.status.hero.hp+"&atk="+core.status.hero.atk+"&def="+core.status.hero.def+"&mdef="+core.status.hero.mdef+"&money="+core.status.hero.money;
+        parameters+="&yellow="+core.status.hero.items.keys.yellowKey+"&blue="+core.status.hero.items.keys.blueKey;
+        parameters+="&playtime="+core.status.hero.time.playtime+"&totaltime="+core.status.hero.time.totaltime+"&step="+core.status.hero.steps+"&ending="+(core.status.event.id=='win'?1:0);
+
+        // console.log(parameters);
+        // console.log("upload!");
+        xmlHttp.open("GET", "http://ckcz123.com/service/mota/mota4.php?"+parameters, true);
+        xmlHttp.send();
+    }
+    catch (e) {
+        // console.log(e);
+    }
 
 }
 
@@ -2434,6 +2509,7 @@ core.prototype.doSL = function (id, type) {
 }
 
 core.prototype.saveData = function(dataId) {
+    core.updateTime();
     var data = {
         'floorId': core.status.floorId,
         'hero': core.clone(core.status.hero),
@@ -2444,6 +2520,7 @@ core.prototype.saveData = function(dataId) {
         'version': core.firstData.version,
         'time': new Date().getTime()
     };
+    data.hero.time.starttime=core.status.hero.time.starttime.getTime();
     // set shop times
     for (var shop in core.status.shops) {
         data.shops[shop]={
@@ -2451,24 +2528,39 @@ core.prototype.saveData = function(dataId) {
             'visited': core.status.shops[shop].visited
         }
     }
+    core.upload();
     return core.setLocalStorage(dataId, data);
     // console.log(core.getLocalStorage(dataId));
 }
 
 core.prototype.loadData = function (data, callback) {
+    core.updateTime();
+    core.upload();
+
+    var totaltime = core.status.hero.time.totaltime;
+    var lasttime = core.clone(core.status.hero.time.lasttime);
+
     core.resetStatus(data.hero, data.hard, data.floorId,
         core.maps.load(data.maps));
+
     // load shop times
     for (var shop in core.status.shops) {
         core.status.shops[shop].times = data.shops[shop].times;
         core.status.shops[shop].visited = data.shops[shop].visited;
     }
-    // core.status.shops = core.clone(data.shops);
+
+    core.status.hero.time.starttime = new Date(core.status.hero.time.starttime);
+    if (totaltime>core.status.hero.time.totaltime)
+        core.status.hero.time.totaltime=totaltime;
+    core.status.hero.time.lasttime = lasttime;
 
     core.changeFloor(data.floorId, null, data.hero.loc, function() {
         core.setHeroMoveTriggerInterval();
         if (core.isset(callback)) callback();
     });
+
+    core.upload(1500);
+
 }
 
 core.prototype.openSettings = function (need) {
@@ -2487,12 +2579,11 @@ core.prototype.openSettings = function (need) {
     core.canvas.ui.textAlign = "center";
     core.fillText('ui', "音乐： " + (core.musicStatus.soundStatus ? "[ON]" : "[OFF]"), 208, top + 56, "#FFFFFF", "bold 17px Verdana");
     core.fillText('ui', "快捷商店", 208, top + 88, "#FFFFFF", "bold 17px Verdana");
-    core.fillText('ui', "保存游戏", 208, top + 120, "#FFFFFF", "bold 17px Verdana");
-    core.fillText('ui', "读取游戏", 208, top + 152, "#FFFFFF", "bold 17px Verdana");
-    core.fillText('ui', "降低难度", 208, top + 184, "#FFFFFF", "bold 17px Verdana");
-    core.fillText('ui', "重新开始", 208, top + 216, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "降低难度", 208, top + 120, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "清空存档", 208, top + 152, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "重新开始", 208, top + 184, "#FFFFFF", "bold 17px Verdana");
+    core.fillText('ui', "关于本塔", 208, top + 216, "#FFFFFF", "bold 17px Verdana");
     core.fillText('ui', "返回游戏", 208, top + 248, "#FFFFFF", "bold 17px Verdana");
-
 }
 
 core.prototype.selectShop = function () {
@@ -2860,7 +2951,6 @@ core.prototype.drawToolbox = function(selectId) {
     // 退出
     core.canvas.ui.textAlign = 'center';
     core.fillText('ui', '返回游戏', 370, 403,'#DDDDDD', 'bold 15px Verdana');
-
 }
 
 core.prototype.drawSLPanel = function(page) {
