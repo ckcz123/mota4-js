@@ -502,8 +502,10 @@ core.prototype.onclick = function (x, y) {
                     core.drawTip("当前已是难度0，不能再降低难度了");
                     return;
                 }
-                core.showConfirmBox("本次操作可生命+" + (1100 - 100 * core.status.hard) + "，确定吗？", function () {
-                    var add = 1100 - 100 * core.status.hard;
+                if (core.status.hard>5) core.status.hard=5;
+                var add = 1100-200*core.status.hard;
+                if (core.status.hard==1) add=1000;
+                core.showConfirmBox("本次操作可生命+" + add + "，确定吗？", function () {
                     core.status.hero.hp += add;
                     core.status.hard--;
                     core.updateStatusBar();
@@ -1059,7 +1061,7 @@ core.prototype.setHeroMoveInterval = function (direction, x, y, callback) {
                 }
                 break;
         }
-    }, 16.7);
+    }, 10);
 }
 
 core.prototype.setHeroMoveTriggerInterval = function () {
@@ -2536,6 +2538,7 @@ core.prototype.loadData = function (data, callback) {
 
     var totaltime = core.status.hero.time.totaltime;
     var lasttime = core.clone(core.status.hero.time.lasttime);
+    if (data.hard>5) data.hard=5;
 
     core.resetStatus(data.hero, data.hard, data.floorId,
         core.maps.load(data.maps));

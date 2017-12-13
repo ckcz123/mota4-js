@@ -103,7 +103,7 @@ function main() {
                 'lasttime': new Date()
             }
         },
-        'hard': 10,
+        'hard': 5,
         'shops': {
             'shop1': {
                 'id': 'shop1', 'title': '贪婪之神', 'name': '3楼商店', 'icon': 'blueShop',
